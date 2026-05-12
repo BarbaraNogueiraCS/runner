@@ -8,7 +8,7 @@
 | **Nome do documento** | Documento de Gerenciamento de Projet |
 | **Versão do documento** | 1.0 |
 | **Data de elaboração** | 08/05/2026 |
-| **Responsável pela elaboração** | Equipe do projeto / Disciplina de Implementação e Integração de Software |
+| **Responsável pela elaboração** | Bárbara Nogueira |
 | **Instituição / contexto acadêmico** | Bacharelado em Engenharia de Software — Universidade Federal de Goiás (UFG) |
 | **Contexto de aplicação** | Plataforma HubSaúde — interoperabilidade de dados em saúde |
 | **Documentos relacionados** | Especificação de Requisitos de Software; Documento de Arquitetura de Software; Documento de Projeto Detalhado de Software; Documento de Modelo C4; Documento de Implementação e Integração; Documento de Teste de Software; Documento de Implantação de Software; Plano Revisado #2; README da implementação de referência |
