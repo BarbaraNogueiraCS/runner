@@ -8,7 +8,7 @@
 | **Nome do documento** | Especificação de Requisitos de Software |
 | **Versão do documento** | 1.0 |
 | **Data de elaboração** | 07/05/2026 |
-| **Responsável pela elaboração** | Equipe do projeto / Disciplina de Implementação e Integração de Software |
+| **Responsável pela elaboração** | Bárbara Nogueira |
 | **Instituição / contexto** | Bacharelado em Engenharia de Software — Universidade Federal de Goiás (UFG) |
 | **Contexto de aplicação** | Plataforma HubSaúde — interoperabilidade de dados em saúde |
 | **Tipo de sistema** | Ferramenta de linha de comandos, integração com aplicações Java e simulação de assinatura digital |
