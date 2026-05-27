@@ -634,8 +634,8 @@ Este README está relacionado aos documentos técnicos elaborados para o Sistema
 | **Disciplina** | Implementação e Integração de Software. |
 | **Instituição** | Bacharelado em Engenharia de Software — Universidade Federal de Goiás (UFG). |
 | **Contexto de aplicação** | Plataforma HubSaúde — interoperabilidade de dados em saúde. |
-| **Responsáveis técnicos** | Estudantes responsáveis pela implementação, integração, testes, documentação e entrega acadêmica. |
-| **Avaliador / professor** | Responsável por avaliar a aderência do projeto aos requisitos da disciplina e às boas práticas de engenharia de software. |
+| **Responsáveis técnicos** | Bárbara Nogueira Carvalho da Silveira - Estudantes responsáveis pela implementação, integração, testes, documentação e entrega acadêmica. |
+| **Avaliador / professor** | Fábio Lucena - Responsável por avaliar a aderência do projeto aos requisitos da disciplina e às boas práticas de engenharia de software. |
 
 ---
 
