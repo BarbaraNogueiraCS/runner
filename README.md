@@ -1,4 +1,4 @@
-# Sistema Runner 123
+# Sistema Runner
 
 ## 1. Visão Geral
 
