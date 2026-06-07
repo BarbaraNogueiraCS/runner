@@ -1,1830 +1,1414 @@
-# Documento de Projeto Detalhado de Software — Sistema Runner
+# 1. Identificação do documento
 
-## 1. Identificação do documento
-
-| Campo | Informação |
-|---|---|
-| **Nome do sistema** | Sistema Runner |
-| **Nome do documento** | Documento de Projeto Detalhado de Software |
-| **Versão do documento** | 1.0 |
-| **Data de elaboração** | 07/05/2026 |
-| **Responsável pela elaboração** | Equipe do projeto / Disciplina de Implementação e Integração de Software |
-| **Instituição / contexto acadêmico** | Bacharelado em Engenharia de Software — Universidade Federal de Goiás (UFG) |
-| **Contexto de aplicação** | Plataforma HubSaúde — interoperabilidade de dados em saúde |
-| **Documentos relacionados** | Especificação de Requisitos de Software — Sistema Runner; Documento de Arquitetura de Software — Sistema Runner; Plano Revisado #2; Documento de Design C4 |
-| **Tipo de sistema** | Ferramenta de linha de comandos, integração com aplicações Java, gerenciamento de processos, provisionamento de JDK/JRE e simulação de assinatura digital |
+**Documento:** Especificação do Projeto Detalhado de Software  
+**Sistema:** Sistema Runner  
+**Disciplina:** Implementação e Integração de Software  
+**Curso:** Engenharia de Software  
+**Contexto institucional:** Trabalho prático relacionado à Plataforma HubSaúde, iniciativa de interesse da Secretaria de Estado da Saúde de Goiás (SES-GO) e da Universidade Federal de Goiás (UFG).  
+**Tipo de documento:** Especificação do Projeto Detalhado de Software (EPDS)  
+**Versão:** 1.0  
+**Data:** 07/06/2026  
+**Status:** Versão inicial consolidada a partir da especificação do trabalho prático, dos diagramas C4, dos critérios de qualidade, do plano revisado, das tarefas operacionais, da Especificação de Requisitos de Software e da Especificação de Arquitetura de Software.  
+**Autores:** Equipe do Sistema Runner  
 
 ---
 
-## 2. Histórico de versões
+# 2. Histórico de versões
 
-| Versão | Data | Autor / Responsável | Descrição da alteração |
-|---|---|---|---|
-| 1.0 | 07/05/2026 | Equipe do projeto | Elaboração inicial do Documento de Projeto Detalhado de Software do Sistema Runner, com base nos arquivos de especificação, plano revisitado, design arquitetural C4, documento de requisitos e documento de arquitetura previamente elaborados. |
-
----
-
-## 3. Sumário
-
-1. [Identificação do documento](#1-identificação-do-documento)  
-2. [Histórico de versões](#2-histórico-de-versões)  
-3. [Sumário](#3-sumário)  
-4. [Introdução](#4-introdução)  
-   4.1 [Objetivo do documento](#41-objetivo-do-documento)  
-   4.2 [Contexto do sistema](#42-contexto-do-sistema)  
-5. [Escopo do projeto detalhado](#5-escopo-do-projeto-detalhado)  
-6. [Visão geral da solução](#6-visão-geral-da-solução)  
-7. [Organização de módulos](#7-organização-de-módulos)  
-8. [Organização de pastas e arquivos](#8-organização-de-pastas-e-arquivos)  
-9. [Projeto das classes principais](#9-projeto-das-classes-principais)  
-   9.1 [Classes de entidade](#91-classes-de-entidade)  
-   9.2 [Classes de serviço](#92-classes-de-serviço)  
-   9.3 [Classes de repositório](#93-classes-de-repositório)  
-   9.4 [Classes de controle](#94-classes-de-controle)  
-10. [Projeto dos métodos principais](#10-projeto-dos-métodos-principais)  
-11. [Projeto dos dados](#11-projeto-dos-dados)  
-   11.1 [Entidades](#111-entidades)  
-   11.2 [Campos](#112-campos)  
-   11.3 [Relacionamentos](#113-relacionamentos)  
-   11.4 [Restrições](#114-restrições)  
-12. [Projeto das interfaces ou endpoints](#12-projeto-das-interfaces-ou-endpoints)  
-13. [Fluxos principais do sistema](#13-fluxos-principais-do-sistema)  
-14. [Regras de negócio detalhadas](#14-regras-de-negócio-detalhadas)  
-15. [Tratamento de erros](#15-tratamento-de-erros)  
-16. [Projeto de segurança](#16-projeto-de-segurança)  
-17. [Projeto de persistência](#17-projeto-de-persistência)  
-18. [Projeto de testes](#18-projeto-de-testes)  
-19. [Rastreabilidade](#19-rastreabilidade)  
-20. [Decisões técnicas principais](#20-decisões-técnicas-principais)  
-21. [Apêndice A — Exemplos conceituais de comandos](#apêndice-a--exemplos-conceituais-de-comandos)  
-22. [Apêndice B — Exemplos conceituais de estruturas JSON](#apêndice-b--exemplos-conceituais-de-estruturas-json)  
-23. [Referências documentais utilizadas](#referências-documentais-utilizadas)  
+| Versão | Data | Autor(es) | Descrição da alteração |
+|---|---:|---|---|
+| 1.0 | 07/06/2026 | Equipe do Sistema Runner | Criação da versão inicial da especificação do projeto detalhado de software, consolidando módulos, estrutura de pastas, classes/structs principais, métodos, dados, interfaces, fluxos, regras, tratamento de erros, segurança, persistência, testes, rastreabilidade e decisões técnicas. |
 
 ---
 
-## 4. Introdução
+# 3. Sumário
 
-O Sistema Runner é uma solução de software voltada para facilitar a execução e o gerenciamento de aplicações Java relacionadas ao ecossistema HubSaúde, por meio de interfaces de linha de comandos. O sistema é composto, principalmente, pelos CLIs `assinatura` e `simulador`, desenvolvidos em Go, e pela aplicação Java `assinador.jar`, responsável por validar parâmetros e simular operações de criação e validação de assinatura digital.
-
-Este documento apresenta o projeto detalhado de software do Sistema Runner. Enquanto a especificação de requisitos define **o que** o sistema deve fazer e o documento de arquitetura define **como a solução é organizada em alto nível**, este documento detalha **como os módulos, classes, métodos, dados, interfaces, fluxos e testes devem ser projetados para orientar a implementação**.
-
-### 4.1 Objetivo do documento
-
-O objetivo deste documento é detalhar a estrutura interna do Sistema Runner, especificando:
-
-- os módulos que compõem a solução;
-- a organização sugerida de pastas e arquivos;
-- as principais classes, estruturas, serviços, controladores e repositórios;
-- os principais métodos e suas responsabilidades;
-- os dados manipulados e persistidos localmente;
-- as interfaces CLI e endpoints HTTP;
-- os fluxos principais de execução;
-- as regras de negócio em nível detalhado;
-- o tratamento de erros;
-- o projeto de segurança;
-- o projeto de persistência;
-- o projeto de testes;
-- a rastreabilidade entre requisitos, módulos e testes;
-- as principais decisões técnicas que orientam a implementação.
-
-Este documento deve servir como referência para desenvolvedores, estudantes, avaliadores, integradores e mantenedores do Sistema Runner.
-
-### 4.2 Contexto do sistema
-
-O Sistema Runner foi definido no contexto de uma disciplina de Implementação e Integração de Software do Bacharelado em Engenharia de Software, com aplicação prática relacionada à Plataforma HubSaúde. O objetivo do sistema é facilitar o acesso a aplicações Java por linha de comandos, reduzindo a necessidade de o usuário conhecer detalhes de instalação do Java, execução de arquivos `.jar`, parâmetros técnicos, portas, processos em segundo plano e comunicação com dispositivos criptográficos.
-
-No contexto do projeto:
-
-- o usuário interage com o sistema por comandos CLI;
-- o CLI `assinatura` invoca o `assinador.jar` para operações simuladas de assinatura e validação;
-- o `assinador.jar` valida parâmetros e retorna respostas simuladas;
-- o CLI `simulador` gerencia o ciclo de vida do Simulador do HubSaúde;
-- o sistema pode provisionar automaticamente JDK/JRE compatível;
-- o sistema pode armazenar arquivos, cache e registros locais no diretório `~/.hubsaude/`;
-- os artefatos distribuídos devem possuir checksums SHA256 e assinatura Cosign;
-- o sistema deve ser multiplataforma, com suporte a Windows, Linux e macOS em arquitetura amd64.
+- [1. Identificação do documento](#1-identificação-do-documento)
+- [2. Histórico de versões](#2-histórico-de-versões)
+- [3. Sumário](#3-sumário)
+- [4. Introdução](#4-introdução)
+  - [4.1 Objetivo do documento](#41-objetivo-do-documento)
+  - [4.2 Contexto do sistema](#42-contexto-do-sistema)
+- [5. Escopo do projeto detalhado](#5-escopo-do-projeto-detalhado)
+- [6. Visão geral da solução](#6-visão-geral-da-solução)
+- [7. Organização de módulos](#7-organização-de-módulos)
+- [8. Organização de pastas e arquivos](#8-organização-de-pastas-e-arquivos)
+- [9. Projeto das classes principais](#9-projeto-das-classes-principais)
+  - [9.1 Classes de entidade](#91-classes-de-entidade)
+  - [9.2 Classes de serviço](#92-classes-de-serviço)
+  - [9.3 Classes de repositório](#93-classes-de-repositório)
+  - [9.4 Classes de controle](#94-classes-de-controle)
+- [10. Projeto dos métodos principais](#10-projeto-dos-métodos-principais)
+- [11. Projeto dos dados](#11-projeto-dos-dados)
+  - [11.1 Entidades](#111-entidades)
+  - [11.2 Campos](#112-campos)
+  - [11.3 Relacionamentos](#113-relacionamentos)
+  - [11.4 Restrições](#114-restrições)
+- [12. Projeto das interfaces ou endpoints](#12-projeto-das-interfaces-ou-endpoints)
+- [13. Fluxos principais do sistema](#13-fluxos-principais-do-sistema)
+- [14. Regras de negócio detalhadas](#14-regras-de-negócio-detalhadas)
+- [15. Tratamento de erros](#15-tratamento-de-erros)
+- [16. Projeto de segurança](#16-projeto-de-segurança)
+- [17. Projeto de persistência](#17-projeto-de-persistência)
+- [18. Projeto de testes](#18-projeto-de-testes)
+- [19. Rastreabilidade](#19-rastreabilidade)
+- [20. Decisões técnicas principais](#20-decisões-técnicas-principais)
 
 ---
 
-## 5. Escopo do projeto detalhado
+# 4. Introdução
 
-Este documento detalha o projeto interno das partes do Sistema Runner que estão no escopo da implementação.
+## 4.1 Objetivo do documento
 
-### 5.1 Está no escopo deste projeto detalhado
+Este documento tem como objetivo especificar o **projeto detalhado de software** do **Sistema Runner**, descrevendo como a solução deve ser estruturada internamente para viabilizar a implementação, integração, testes, manutenção e evolução dos componentes previstos.
 
-- projeto interno do CLI `assinatura`;
-- projeto interno do CLI `simulador`;
-- projeto interno do `assinador.jar`;
-- definição de módulos, responsabilidades e dependências;
-- definição de entidades, serviços, repositórios e controladores;
-- projeto dos comandos CLI;
-- projeto dos endpoints HTTP `/sign` e `/validate`;
-- projeto da invocação local via `java -jar`;
-- projeto da invocação HTTP em modo servidor;
-- projeto do gerenciamento de processos;
-- projeto do provisionamento automático de JDK/JRE;
-- projeto do download e cache do `simulador.jar`;
-- projeto da validação de parâmetros;
-- projeto da simulação de criação e validação de assinatura;
-- projeto de persistência local em `~/.hubsaude/`;
-- projeto de tratamento de erros;
-- projeto de testes unitários, integração, aceitação e multiplataforma;
-- rastreabilidade entre requisitos, histórias, módulos e testes.
+Enquanto a Especificação de Requisitos de Software define **o que** o sistema deve fazer e a Especificação de Arquitetura de Software define **como o sistema é organizado em alto nível**, este documento detalha **como os módulos, classes, métodos, dados, interfaces e fluxos devem ser projetados** para orientar a implementação do sistema.
 
-### 5.2 Não está no escopo deste projeto detalhado
+Este documento deve servir como referência para:
+
+- orientar a implementação dos CLIs `assinatura` e `simulador`;
+- orientar a implementação do `assinador.jar` em Java;
+- detalhar responsabilidades de módulos, classes, serviços e componentes;
+- definir os principais métodos e contratos internos;
+- especificar estruturas de dados, metadados e artefatos locais;
+- detalhar os fluxos de execução dos casos de uso principais;
+- estabelecer tratamento de erros, segurança, persistência e testes;
+- preservar rastreabilidade entre requisitos, arquitetura, código, testes e entregáveis.
+
+## 4.2 Contexto do sistema
+
+O Sistema Runner é um sistema de linha de comando voltado para facilitar a execução de aplicações Java associadas à Plataforma HubSaúde. Seu objetivo é permitir que usuários executem operações de assinatura digital simulada, validação de assinatura simulada e gerenciamento do Simulador do HubSaúde sem precisar conhecer detalhes de Java, JVM, JARs, portas, endpoints HTTP, PKCS#11 ou comandos complexos de terminal.
+
+O sistema é composto por:
+
+- **CLI `assinatura`**, implementado em Go, responsável por receber comandos de criação e validação de assinatura e invocar o `assinador.jar` em modo local ou modo servidor;
+- **`assinador.jar`**, implementado em Java 21, responsável por validar parâmetros, simular criação de assinatura, simular validação de assinatura e, quando aplicável, interagir com dispositivo criptográfico via PKCS#11;
+- **CLI `simulador`**, implementado em Go, responsável por iniciar, parar e consultar o status do Simulador do HubSaúde;
+- **Simulador do HubSaúde**, aplicação Java/Web gerenciada pelo CLI `simulador`;
+- **diretório local gerenciado**, preferencialmente `~/.hubsaude/`, usado para armazenar JDK/JRE provisionado, JARs, cache, metadados de versão, PID, porta e logs operacionais;
+- **pipeline de CI/CD**, responsável por validar, compilar, testar, gerar binários, publicar releases, gerar checksums e assinar artefatos.
+
+---
+
+# 5. Escopo do projeto detalhado
+
+Este documento detalha os elementos necessários para transformar a arquitetura definida em uma implementação concreta e rastreável. Estão incluídos no escopo do projeto detalhado:
+
+- organização dos módulos Go e Java;
+- estrutura recomendada de pastas e arquivos;
+- classes, structs, interfaces e componentes principais;
+- métodos principais e suas responsabilidades;
+- entidades de dados e metadados operacionais;
+- contratos de CLI, subprocesso e HTTP;
+- fluxos de assinatura, validação, servidor, simulador, provisionamento e release;
+- regras de negócio detalhadas;
+- tratamento de erros e códigos de saída;
+- projeto de segurança da execução local e da cadeia de suprimentos;
+- projeto de persistência operacional em sistema de arquivos;
+- projeto de testes unitários, integração, contrato, aceitação e release;
+- matriz de rastreabilidade entre requisitos, módulos e testes;
+- decisões técnicas principais.
+
+Não estão no escopo deste documento:
 
 - implementação real de assinatura digital criptográfica;
-- implementação real de validação criptográfica de assinatura digital;
+- implementação real de validação criptográfica;
 - integração real com autoridades certificadoras;
-- geração de certificados digitais;
 - autenticação de usuários;
-- armazenamento persistente de assinaturas digitais;
 - interface gráfica;
-- implantação em ambiente distribuído de produção;
-- substituição do Simulador do HubSaúde por uma aplicação própria de negócio;
-- definição final dos parâmetros oficiais dos casos de uso FHIR além dos exemplos conceituais apresentados neste documento.
+- persistência de assinaturas como dado de negócio;
+- modelagem de banco de dados relacional;
+- desenho de algoritmos criptográficos reais.
+
+O projeto detalhado deve respeitar as restrições já estabelecidas: CLIs em Go 1.25, `assinador.jar` em Java 21, funcionamento multiplataforma em Windows/Linux/macOS `amd64`, modo servidor como padrão, modo local por ativação explícita, validação centralizada no `assinador.jar`, releases com SemVer, checksums SHA256 e assinatura Cosign/Sigstore.
 
 ---
 
-## 6. Visão geral da solução
+# 6. Visão geral da solução
 
-A solução é composta por três aplicações principais e por módulos auxiliares compartilhados.
+A solução é organizada como uma aplicação local multi-componente. O usuário interage com executáveis de linha de comando. Esses executáveis, por sua vez, orquestram aplicações Java, processos locais, chamadas HTTP, downloads, cache e verificações de integridade.
 
-| Aplicação / parte | Tecnologia | Responsabilidade principal |
-|---|---|---|
-| **`assinatura`** | Go 1.25 + Cobra | CLI responsável por receber comandos de criação e validação de assinatura, invocar o `assinador.jar`, formatar resultados e gerenciar o modo servidor do assinador. |
-| **`simulador`** | Go 1.25 + Cobra | CLI responsável por iniciar, parar, consultar status e baixar dinamicamente o Simulador do HubSaúde. |
-| **`assinador.jar`** | Java 21 | Aplicação Java responsável por validar parâmetros, simular criação de assinatura, simular validação de assinatura e expor endpoints HTTP. |
-| **Diretório local gerenciado** | Sistema de arquivos | Armazena JDK/JRE, arquivos `.jar`, metadados, cache, registros de processos e logs. |
-| **Pipeline CI/CD** | GitHub Actions | Gera binários multiplataforma, publica releases, checksums SHA256 e assinaturas Cosign. |
+A visão lógica da solução pode ser representada da seguinte forma:
 
-### 6.1 Funcionamento conceitual
+```mermaid
+flowchart LR
+    U[Usuário]
 
-O funcionamento geral do Sistema Runner pode ser resumido da seguinte forma:
+    subgraph SR[Sistema Runner]
+        A[CLI assinatura\nGo]
+        S[CLI simulador\nGo]
+        J[assinador.jar\nJava 21]
+        H[Simulador do HubSaúde\nsimulador.jar]
+        FS[(~/.hubsaude\ncache, JDK, metadados, PID, logs)]
+    end
 
-```text
-Usuário
-  ↓
-CLI assinatura ou CLI simulador
-  ↓
-Serviços internos do Runner
-  ↓
-JDK/JRE local ou provisionado automaticamente
-  ↓
-assinador.jar ou simulador.jar
-  ↓
-Resposta formatada ao usuário
+    U -->|sign / validate / stop / version| A
+    U -->|start / stop / status| S
+
+    A -->|modo local: java -jar| J
+    A -->|modo servidor: HTTP| J
+    S -->|processo + HTTP| H
+
+    A --> FS
+    S --> FS
+    J -->|PKCS#11| P[Token / smart card / SoftHSM2]
+    A -->|download JDK/JRE se necessário| T[Eclipse Temurin / Adoptium]
+    S -->|download simulador.jar| G[GitHub Releases / release.json]
 ```
 
-### 6.2 Responsabilidades principais
+O **CLI `assinatura`** deve atuar como orquestrador das operações de assinatura e validação. Ele decide se usará o modo servidor ou modo local, garante que exista Java disponível, localiza ou inicia o `assinador.jar`, envia os parâmetros, interpreta a resposta e apresenta resultado legível ao usuário.
 
-| Responsabilidade | Onde será implementada |
-|---|---|
-| Receber comandos do usuário | Camada CLI em Go, usando Cobra |
-| Validar argumentos básicos do CLI | Módulos de validação nos CLIs |
-| Validar parâmetros de assinatura | `assinador.jar`, em `ParameterValidator` |
-| Simular assinatura | `FakeSignatureService` |
-| Simular validação | `FakeSignatureService` |
-| Invocar Java localmente | `LocalJarInvoker` |
-| Invocar assinador via HTTP | `AssinadorHttpClient` |
-| Iniciar/parar processos Java | `ProcessManager` |
-| Registrar PID e porta | `ProcessRegistry` |
-| Baixar JDK/JRE | `JavaRuntimeDownloader` |
-| Baixar `simulador.jar` | `ArtifactDownloader` |
-| Verificar checksum | `ChecksumVerifier` |
-| Exibir mensagens ao usuário | `OutputFormatter` |
-| Padronizar erros | `ErrorHandler` |
+O **`assinador.jar`** deve concentrar as regras de validação de parâmetros e simulação. Ele deve possuir entrada por linha de comando para o modo local e endpoints HTTP para o modo servidor, reutilizando a mesma lógica interna de validação e simulação em ambos os modos.
+
+O **CLI `simulador`** deve gerenciar o ciclo de vida do Simulador do HubSaúde. Ele deve verificar a porta, obter o `simulador.jar` quando necessário, iniciar o processo, aguardar readiness, consultar status e encerrar o serviço quando solicitado.
+
+O **diretório `~/.hubsaude/`** deve funcionar como área local de trabalho do sistema, armazenando artefatos, versões, PID, porta, logs e JDK/JRE provisionado.
 
 ---
 
-## 7. Organização de módulos
+# 7. Organização de módulos
 
-A organização de módulos proposta segue separação de responsabilidades, baixo acoplamento e alta coesão.
+## 7.1 Módulos do projeto Go
 
-### 7.1 Módulos do CLI `assinatura`
+| Módulo/Pacote | Responsabilidade principal | Usado por |
+|---|---|---|
+| `cmd/assinatura` | Ponto de entrada do binário `assinatura`. Inicializa o CLI e injeta versão. | Usuário final, CI/CD |
+| `cmd/simulador` | Ponto de entrada do binário `simulador`. Inicializa comandos de ciclo de vida do simulador. | Usuário final, CI/CD |
+| `internal/cli` | Define comandos, subcomandos, flags e ajuda dos CLIs. | `cmd/assinatura`, `cmd/simulador` |
+| `internal/signature` | Orquestra casos de uso de assinatura e validação. | CLI `assinatura` |
+| `internal/simulator` | Orquestra casos de uso do Simulador do HubSaúde. | CLI `simulador` |
+| `internal/invoker` | Implementa invocação local por subprocesso e invocação HTTP. | `internal/signature` |
+| `internal/process` | Gerencia PID, porta, health check, readiness, start, stop e status. | `signature`, `simulator` |
+| `internal/jdk` | Detecta e provisiona JDK/JRE compatível. | `signature`, `simulator` |
+| `internal/release` | Consulta releases, baixa artefatos e verifica integridade. | `simulator`, `jdk`, CI auxiliar |
+| `internal/config` | Centraliza configurações, portas padrão, caminhos e variáveis de ambiente. | Todos os módulos Go |
+| `internal/storage` | Lê e grava metadados operacionais no sistema de arquivos. | `process`, `release`, `jdk` |
+| `internal/output` | Formata resultados, status e erros para terminal. | CLIs |
+| `internal/errors` | Padroniza tipos de erro e códigos de saída. | Todos os módulos Go |
+| `internal/logging` | Centraliza logs estruturados e níveis de log. | Todos os módulos Go |
+
+## 7.2 Módulos do projeto Java
+
+| Pacote Java sugerido | Responsabilidade principal |
+|---|---|
+| `br.ufg.hubsaude.runner.assinador` | Ponto de entrada e configuração geral do `assinador.jar`. |
+| `br.ufg.hubsaude.runner.assinador.cli` | Entrada local por linha de comando. |
+| `br.ufg.hubsaude.runner.assinador.http` | Controllers/endpoints HTTP. |
+| `br.ufg.hubsaude.runner.assinador.domain` | Entidades de domínio da assinatura simulada. |
+| `br.ufg.hubsaude.runner.assinador.service` | Serviços de assinatura, validação e simulação. |
+| `br.ufg.hubsaude.runner.assinador.validation` | Validação de parâmetros de assinatura e validação. |
+| `br.ufg.hubsaude.runner.assinador.pkcs11` | Adaptação para PKCS#11, token, smart card ou simulador. |
+| `br.ufg.hubsaude.runner.assinador.server` | Ciclo de vida do servidor, health check, readiness, shutdown e timeout de inatividade. |
+| `br.ufg.hubsaude.runner.assinador.error` | Modelo padronizado de erros e respostas. |
+| `br.ufg.hubsaude.runner.assinador.logging` | Logs estruturados do `assinador.jar`. |
+
+## 7.3 Módulos de automação e distribuição
 
 | Módulo | Responsabilidade |
 |---|---|
-| `cmd/assinatura` | Ponto de entrada do binário `assinatura`. |
-| `internal/cli/assinatura/commands` | Definição dos comandos `sign`, `validate`, `stop`, `version` e `help`. |
-| `internal/cli/assinatura/formatter` | Formatação das respostas de sucesso e erro. |
-| `internal/assinatura/usecase` | Orquestra os casos de uso de assinatura e validação. |
-| `internal/assinatura/validation` | Validação preliminar dos argumentos recebidos pelo CLI. |
-| `internal/java/runtime` | Detecção e provisionamento de JDK/JRE. |
-| `internal/java/invoker` | Invocação local por `java -jar` e invocação HTTP. |
-| `internal/process` | Gerenciamento de processos, portas, health check e registros. |
-| `internal/config` | Resolução de caminhos locais e configurações. |
-| `internal/errors` | Tipos e mensagens padronizadas de erro. |
-
-### 7.2 Módulos do CLI `simulador`
-
-| Módulo | Responsabilidade |
-|---|---|
-| `cmd/simulador` | Ponto de entrada do binário `simulador`. |
-| `internal/cli/simulador/commands` | Definição dos comandos `start`, `stop`, `status` e `help`. |
-| `internal/cli/simulador/formatter` | Formatação das respostas do simulador. |
-| `internal/simulador/usecase` | Orquestra início, parada e consulta de status do simulador. |
-| `internal/artifacts` | Consulta de release, download, checksum e cache do `simulador.jar`. |
-| `internal/java/runtime` | Detecção e provisionamento de JDK/JRE. |
-| `internal/process` | Gerenciamento do processo do simulador. |
-| `internal/config` | Caminhos locais em `~/.hubsaude/`. |
-| `internal/errors` | Mensagens padronizadas de erro. |
-
-### 7.3 Módulos do `assinador.jar`
-
-| Módulo / pacote | Responsabilidade |
-|---|---|
-| `br.ufg.hubsaude.assinador` | Ponto de entrada da aplicação Java. |
-| `cli` | Recebimento de comandos quando o `.jar` é invocado localmente. |
-| `controller` | Endpoints HTTP `/sign` e `/validate`. |
-| `dto` | Objetos de entrada e saída de assinatura e validação. |
-| `validation` | Validação dos parâmetros obrigatórios e formatos. |
-| `service` | Interface e implementação da lógica de assinatura simulada. |
-| `pkcs11` | Adaptador para interação com dispositivo criptográfico. |
-| `error` | Tratamento global de exceções e respostas de erro. |
-| `config` | Configurações da aplicação, porta e modo de execução. |
-
-### 7.4 Módulos de CI/CD
-
-| Módulo | Responsabilidade |
-|---|---|
-| `.github/workflows/build.yml` | Executar testes e gerar builds para cada push ou pull request. |
-| `.github/workflows/release.yml` | Gerar artefatos de release, checksums SHA256 e assinaturas Cosign. |
-| `scripts/` | Scripts auxiliares para geração de diagramas, empacotamento ou automações locais. |
+| `.github/workflows/build.yml` | Executar lint, vet, testes e build em push/PR para `main`. |
+| `.github/workflows/release.yml` | Executar testes, gerar binários, gerar checksums, assinar artefatos e publicar release. |
+| `docs/adr` | Armazenar decisões técnicas e arquiteturais relevantes. |
+| `docs/diagramas` | Armazenar fontes PlantUML e imagens geradas dos diagramas C4. |
+| `scripts/` | Scripts auxiliares de geração, verificação ou automação, quando necessários. |
 
 ---
 
-## 8. Organização de pastas e arquivos
+# 8. Organização de pastas e arquivos
 
-A organização abaixo é uma proposta detalhada e coerente com a arquitetura definida. Os nomes podem ser ajustados durante a implementação, desde que as responsabilidades sejam preservadas.
+A estrutura sugerida do repositório deve favorecer separação de responsabilidades, rastreabilidade e CI/CD unificado.
 
 ```text
-sistema-runner/
-  README.md
-  LICENSE
-  go.mod
-  go.sum
-
-  docs/
-    requisitos.md
-    arquitetura.md
-    projeto-detalhado.md
-    manual-usuario.md
-    implantacao.md
-    testes.md
-    diagramas/
-      contexto.puml
-      conteineres.puml
-      componentes.puml
-      codigo.puml
-      implantacao.puml
-      imagens/
-
-  cmd/
-    assinatura/
-      main.go
-    simulador/
-      main.go
-
-  internal/
-    cli/
-      assinatura/
-        commands/
-          root.go
-          sign.go
-          validate.go
-          stop.go
-          version.go
-        formatter/
-          output_formatter.go
-      simulador/
-        commands/
-          root.go
-          start.go
-          stop.go
-          status.go
-        formatter/
-          output_formatter.go
-
-    assinatura/
-      usecase/
-        sign_usecase.go
-        validate_usecase.go
-        stop_assinador_usecase.go
-      validation/
-        cli_argument_validator.go
-      dto/
-        sign_command.go
-        validate_command.go
-        operation_result.go
-
-    simulador/
-      usecase/
-        start_simulator_usecase.go
-        stop_simulator_usecase.go
-        status_simulator_usecase.go
-      dto/
-        simulator_status.go
-        simulator_config.go
-
-    java/
-      runtime/
-        java_runtime.go
-        java_detector.go
-        java_downloader.go
-        java_resolver.go
-      invoker/
-        local_jar_invoker.go
-        assinador_http_client.go
-
-    process/
-      process_manager.go
-      process_registry.go
-      health_checker.go
-      port_checker.go
-      process_metadata.go
-
-    artifacts/
-      release_resolver.go
-      artifact_downloader.go
-      checksum_verifier.go
-      cache_manager.go
-      release_metadata.go
-
-    config/
-      paths.go
-      app_config.go
-      constants.go
-
-    errors/
-      app_error.go
-      error_handler.go
-      messages.go
-
-  projetos/
-    assinador-java/
-      pom.xml
-      README.md
-      src/
-        main/
-          java/
-            br/
-              ufg/
-                hubsaude/
-                  assinador/
-                    Main.java
-                    cli/
-                      CliAdapter.java
-                      CliCommandParser.java
-                    config/
-                      ServerConfig.java
-                      Pkcs11Config.java
-                    controller/
-                      SignatureController.java
-                      HealthController.java
-                    dto/
-                      SignRequest.java
-                      SignResponse.java
-                      ValidateRequest.java
-                      ValidateResponse.java
-                      ErrorResponse.java
-                    validation/
-                      ParameterValidator.java
-                      ValidationResult.java
-                    service/
-                      SignatureService.java
-                      FakeSignatureService.java
-                    pkcs11/
-                      PKCS11Adapter.java
-                      PKCS11Exception.java
-                    error/
-                      GlobalExceptionHandler.java
-                      InvalidParameterException.java
-        test/
-          java/
-            br/
-              ufg/
-                hubsaude/
-                  assinador/
-                    validation/
-                    service/
-                    controller/
-                    cli/
-
-  scripts/
-    geraimagens.sh
-    geraimagens.bat
-    verify-artifacts.sh
-
-  .github/
-    workflows/
-      build.yml
-      release.yml
+runner/
+├── cmd/
+│   ├── assinatura/
+│   │   ├── main.go
+│   │   └── version_test.go
+│   └── simulador/
+│       ├── main.go
+│       └── version_test.go
+├── internal/
+│   ├── cli/
+│   │   ├── assinatura_commands.go
+│   │   ├── simulador_commands.go
+│   │   └── help.go
+│   ├── signature/
+│   │   ├── command_handler.go
+│   │   ├── mode_resolver.go
+│   │   └── dto.go
+│   ├── simulator/
+│   │   ├── lifecycle_manager.go
+│   │   ├── downloader.go
+│   │   └── dto.go
+│   ├── invoker/
+│   │   ├── local_jar_invoker.go
+│   │   ├── http_signer_client.go
+│   │   └── invoker.go
+│   ├── process/
+│   │   ├── process_manager.go
+│   │   ├── process_registry.go
+│   │   ├── health_checker.go
+│   │   └── port_checker.go
+│   ├── jdk/
+│   │   ├── detector.go
+│   │   ├── provider.go
+│   │   └── installer.go
+│   ├── release/
+│   │   ├── metadata_client.go
+│   │   ├── downloader.go
+│   │   └── artifact_verifier.go
+│   ├── config/
+│   │   ├── paths.go
+│   │   ├── defaults.go
+│   │   └── runtime_config.go
+│   ├── storage/
+│   │   ├── file_store.go
+│   │   └── metadata_store.go
+│   ├── output/
+│   │   ├── formatter.go
+│   │   └── terminal_writer.go
+│   ├── errors/
+│   │   ├── app_error.go
+│   │   └── exit_codes.go
+│   └── logging/
+│       └── logger.go
+├── assinador/
+│   ├── pom.xml
+│   └── src/
+│       ├── main/
+│       │   └── java/
+│       │       └── br/ufg/hubsaude/runner/assinador/
+│       │           ├── AssinadorApplication.java
+│       │           ├── cli/
+│       │           │   └── CliEntryPoint.java
+│       │           ├── http/
+│       │           │   └── SignatureController.java
+│       │           ├── domain/
+│       │           │   ├── SignRequest.java
+│       │           │   ├── SignResponse.java
+│       │           │   ├── ValidateRequest.java
+│       │           │   ├── ValidateResponse.java
+│       │           │   └── ErrorResponse.java
+│       │           ├── service/
+│       │           │   ├── SignatureService.java
+│       │           │   └── FakeSignatureService.java
+│       │           ├── validation/
+│       │           │   ├── ParameterValidator.java
+│       │           │   └── ValidationResult.java
+│       │           ├── pkcs11/
+│       │           │   └── Pkcs11ProviderAdapter.java
+│       │           ├── server/
+│       │           │   └── ServerLifecycle.java
+│       │           └── error/
+│       │               └── ErrorResponseFactory.java
+│       └── test/
+│           └── java/
+├── docs/
+│   ├── requisitos/
+│   ├── arquitetura/
+│   ├── projeto-detalhado/
+│   ├── adr/
+│   └── diagramas/
+├── .github/
+│   └── workflows/
+│       ├── build.yml
+│       └── release.yml
+├── go.mod
+├── go.sum
+├── .gitignore
+├── .gitattributes
+├── LICENSE
+└── README.md
 ```
 
-### 8.1 Justificativa da organização
+## 8.1 Regras de organização
 
-| Diretório | Justificativa |
-|---|---|
-| `cmd/` | Convenção comum em projetos Go para pontos de entrada de executáveis. |
-| `internal/` | Impede uso externo dos pacotes internos e organiza a lógica da aplicação. |
-| `internal/cli/` | Separa comandos e formatação da lógica de negócio. |
-| `internal/java/` | Centraliza detecção de Java, provisionamento e invocação de `.jar`. |
-| `internal/process/` | Reúne controle de processos, portas, health checks e PID. |
-| `internal/artifacts/` | Centraliza download, releases, cache e checksum. |
-| `projetos/assinador-java/` | Separa claramente a aplicação Java do restante do código Go. |
-| `.github/workflows/` | Centraliza automações de build, testes e releases. |
-| `docs/` | Mantém documentação técnica e de uso no próprio repositório. |
+- O diretório `cmd/` deve conter apenas pontos de entrada dos binários.
+- O diretório `internal/` deve conter pacotes Go não exportados para uso externo.
+- A lógica de negócio e integração não deve ficar concentrada em `main.go`.
+- O projeto Java deve ficar isolado em `assinador/`, com build próprio.
+- Documentos de requisitos, arquitetura, projeto detalhado e ADRs devem ficar em `docs/`.
+- Artefatos gerados, binários, `target/`, caches, logs, `.idea/`, `.DS_Store`, `__pycache__/` e similares não devem ser versionados.
+- Caminhos e nomes de arquivos devem evitar espaços e acentos.
+- O repositório deve possuir `.gitignore`, `.gitattributes`, `LICENSE` e `README.md`.
 
 ---
 
-## 9. Projeto das classes principais
+# 9. Projeto das classes principais
 
-Observação: em Go, o conceito de “classe” é normalmente representado por `structs`, `interfaces`, funções e pacotes. Neste documento, o termo “classe” é usado em sentido amplo, contemplando tanto classes Java quanto structs/interfaces Go.
+Neste documento, o termo “classe” é usado em sentido amplo para representar **classes Java**, **interfaces Java**, **structs Go**, **interfaces Go** e **componentes de controle**. Como o sistema usa Go e Java, a modelagem respeita as características de cada linguagem.
 
-### 9.1 Classes de entidade
+## 9.1 Classes de entidade
 
-As entidades representam dados estruturados manipulados pelo sistema.
+As classes de entidade representam dados de domínio ou dados operacionais trocados entre componentes.
 
-#### 9.1.1 Entidades em Go
+### 9.1.1 Entidades do domínio de assinatura
 
-| Entidade / Struct | Pacote sugerido | Responsabilidade |
+| Classe/Struct | Linguagem | Responsabilidade | Principais campos |
+|---|---|---|---|
+| `SignRequest` | Java/Go DTO | Representa uma solicitação de criação de assinatura simulada. | `documentPath`, `profile`, `parameters`, `mode`, `timestamp` |
+| `SignResponse` | Java/Go DTO | Representa a resposta de criação de assinatura simulada. | `signatureId`, `status`, `signatureValue`, `algorithm`, `createdAt`, `message` |
+| `ValidateRequest` | Java/Go DTO | Representa uma solicitação de validação de assinatura simulada. | `signaturePath`, `signatureValue`, `documentPath`, `parameters`, `timestamp` |
+| `ValidateResponse` | Java/Go DTO | Representa o resultado de validação simulada. | `valid`, `status`, `reason`, `validatedAt`, `message` |
+| `ValidationResult` | Java | Representa o resultado da validação de parâmetros. | `valid`, `errors` |
+| `ValidationError` | Java/Go DTO | Representa um erro específico de validação. | `field`, `code`, `message`, `suggestion` |
+
+### 9.1.2 Entidades operacionais
+
+| Classe/Struct | Linguagem | Responsabilidade | Principais campos |
+|---|---|---|---|
+| `RuntimeConfig` | Go | Representa configurações de execução dos CLIs. | `homeDir`, `defaultPort`, `timeout`, `verbose`, `quiet` |
+| `ProcessInfo` | Go | Representa um processo gerenciado. | `name`, `pid`, `port`, `startedAt`, `command`, `status` |
+| `ServerStatus` | Go | Representa estado de servidor local. | `running`, `ready`, `port`, `pid`, `version`, `message` |
+| `ArtifactMetadata` | Go | Representa informações de artefato baixado ou publicado. | `name`, `version`, `url`, `sha256`, `localPath` |
+| `JdkInfo` | Go | Representa uma instalação Java detectada ou provisionada. | `version`, `javaPath`, `home`, `source`, `valid` |
+| `DownloadResult` | Go | Representa resultado de download. | `success`, `path`, `checksum`, `fromCache`, `error` |
+| `AppError` | Go | Representa erro estruturado da aplicação. | `kind`, `code`, `message`, `cause`, `suggestion`, `exitCode` |
+| `ErrorResponse` | Java/Go DTO | Representa resposta padronizada de erro em HTTP ou CLI. | `errorCode`, `message`, `details`, `suggestion`, `timestamp` |
+
+## 9.2 Classes de serviço
+
+As classes de serviço implementam lógica de aplicação e orquestração dos casos de uso.
+
+### 9.2.1 Serviços em Go
+
+| Classe/Struct/Interface | Responsabilidade | Métodos principais |
 |---|---|---|
-| `SignCommand` | `internal/assinatura/dto` | Representa os parâmetros recebidos no comando `assinatura sign`. |
-| `ValidateCommand` | `internal/assinatura/dto` | Representa os parâmetros recebidos no comando `assinatura validate`. |
-| `OperationResult` | `internal/assinatura/dto` | Representa resultado de sucesso ou erro de uma operação de assinatura. |
-| `JavaRuntime` | `internal/java/runtime` | Representa uma instalação de Java detectada ou provisionada. |
-| `ProcessMetadata` | `internal/process` | Representa PID, porta, aplicação, modo e data de início de um processo. |
-| `SimulatorStatus` | `internal/simulador/dto` | Representa o status do Simulador do HubSaúde. |
-| `SimulatorConfig` | `internal/simulador/dto` | Representa porta, origem de download e configurações do simulador. |
-| `ReleaseMetadata` | `internal/artifacts` | Representa informações de versão, URL e checksum de artefato. |
-| `AppError` | `internal/errors` | Representa erro padronizado da aplicação. |
+| `SignatureCommandHandler` | Orquestra comandos `sign` e `validate`. | `Sign(ctx, options)`, `Validate(ctx, options)` |
+| `ModeResolver` | Decide modo de execução: servidor ou local. | `Resolve(ctx, options)`, `ShouldUseServer(options)` |
+| `LocalJarInvoker` | Executa `assinador.jar` por subprocesso. | `Invoke(ctx, args)`, `BuildCommand(args)` |
+| `HttpSignerClient` | Chama endpoints HTTP do `assinador.jar`. | `Sign(ctx, request)`, `Validate(ctx, request)`, `Health(ctx)` |
+| `SignerServerManager` | Gerencia ciclo de vida do servidor `assinador.jar`. | `Start(ctx, port)`, `Stop(ctx, port)`, `Status(ctx, port)`, `EnsureRunning(ctx, port)` |
+| `SimulatorLifecycleManager` | Gerencia ciclo de vida do Simulador do HubSaúde. | `Start(ctx, options)`, `Stop(ctx, port)`, `Status(ctx, port)` |
+| `JdkProvider` | Detecta ou baixa JDK/JRE compatível. | `EnsureJava(ctx)`, `Detect()`, `Provision(ctx)` |
+| `ReleaseService` | Consulta e baixa artefatos. | `GetLatest(ctx)`, `Download(ctx, metadata)`, `Verify(path, checksum)` |
+| `OutputFormatter` | Converte respostas em mensagens legíveis. | `FormatSignResponse(resp)`, `FormatValidateResponse(resp)`, `FormatStatus(status)` |
+| `ErrorMapper` | Converte exceções/erros internos em `AppError`. | `Map(err)`, `ExitCode(err)`, `UserMessage(err)` |
 
-#### 9.1.2 Entidades em Java
+### 9.2.2 Serviços em Java
 
-| Classe | Pacote sugerido | Responsabilidade |
+| Classe/Interface | Responsabilidade | Métodos principais |
 |---|---|---|
-| `SignRequest` | `dto` | Representa a requisição de criação de assinatura. |
-| `SignResponse` | `dto` | Representa a resposta de criação de assinatura simulada. |
-| `ValidateRequest` | `dto` | Representa a requisição de validação de assinatura. |
-| `ValidateResponse` | `dto` | Representa a resposta de validação simulada. |
-| `ErrorResponse` | `dto` | Representa resposta padronizada de erro. |
-| `ValidationResult` | `validation` | Representa resultado interno da validação de parâmetros. |
-| `Pkcs11Config` | `config` | Representa configurações de acesso ao dispositivo PKCS#11. |
-| `ServerConfig` | `config` | Representa configurações de porta e modo servidor. |
+| `SignatureService` | Define contrato de assinatura e validação. | `sign(SignRequest)`, `validate(ValidateRequest)` |
+| `FakeSignatureService` | Implementa simulação de assinatura e validação. | `sign(request)`, `validate(request)` |
+| `ParameterValidator` | Valida parâmetros obrigatórios e formatos. | `validateSign(request)`, `validateValidation(request)` |
+| `Pkcs11ProviderAdapter` | Encapsula integração PKCS#11. | `isAvailable()`, `loadProvider(config)`, `testConnection()` |
+| `ServerLifecycle` | Controla servidor HTTP. | `start(port)`, `stop()`, `health()`, `ready()`, `resetIdleTimer()` |
+| `ErrorResponseFactory` | Padroniza respostas de erro. | `fromValidation(errors)`, `fromException(ex)`, `systemError(ex)` |
 
-### 9.2 Classes de serviço
+## 9.3 Classes de repositório
 
-As classes de serviço executam regras de aplicação e coordenam operações.
+O sistema não possui banco de dados. Portanto, os “repositórios” são abstrações de acesso ao sistema de arquivos e metadados locais.
 
-#### 9.2.1 Serviços em Go
+| Classe/Struct | Linguagem | Responsabilidade | Métodos principais |
+|---|---|---|---|
+| `ProcessRegistry` | Go | Lê e grava informações de processos gerenciados. | `Save(info)`, `Find(name, port)`, `Delete(name, port)`, `List()` |
+| `MetadataStore` | Go | Armazena versões, checksums e metadados de artefatos. | `SaveArtifact(metadata)`, `GetArtifact(name)`, `IsCurrent(name, version)` |
+| `FileStore` | Go | Manipula diretórios e arquivos locais. | `EnsureDir(path)`, `Exists(path)`, `WriteAtomic(path, data)`, `Read(path)` |
+| `JdkStore` | Go | Controla instalação local do JDK/JRE. | `FindManagedJdk()`, `SaveJdkInfo(info)`, `GetJavaPath()` |
+| `LogStore` | Go/Java | Armazena logs operacionais quando necessário. | `OpenLog(name)`, `RotateIfNeeded()`, `Write(entry)` |
 
-| Serviço | Pacote sugerido | Responsabilidade |
-|---|---|---|
-| `SignUseCase` | `internal/assinatura/usecase` | Orquestra o fluxo de criação de assinatura simulada. |
-| `ValidateUseCase` | `internal/assinatura/usecase` | Orquestra o fluxo de validação de assinatura simulada. |
-| `StopAssinadorUseCase` | `internal/assinatura/usecase` | Orquestra a interrupção do `assinador.jar`. |
-| `StartSimulatorUseCase` | `internal/simulador/usecase` | Orquestra o início do Simulador do HubSaúde. |
-| `StopSimulatorUseCase` | `internal/simulador/usecase` | Orquestra a parada do Simulador do HubSaúde. |
-| `StatusSimulatorUseCase` | `internal/simulador/usecase` | Orquestra a consulta de status do Simulador. |
-| `JavaRuntimeResolver` | `internal/java/runtime` | Decide se usa Java local ou se baixa uma versão compatível. |
-| `JavaDetector` | `internal/java/runtime` | Detecta Java no `PATH` ou em `~/.hubsaude/`. |
-| `JavaDownloader` | `internal/java/runtime` | Baixa e prepara JDK/JRE compatível. |
-| `LocalJarInvoker` | `internal/java/invoker` | Executa aplicações Java via `java -jar`. |
-| `AssinadorHttpClient` | `internal/java/invoker` | Envia requisições HTTP ao `assinador.jar`. |
-| `ProcessManager` | `internal/process` | Inicia, encerra e monitora processos. |
-| `HealthChecker` | `internal/process` | Verifica se um serviço HTTP está respondendo. |
-| `PortChecker` | `internal/process` | Verifica disponibilidade de portas. |
-| `ReleaseResolver` | `internal/artifacts` | Obtém metadados de release e identifica versão mais recente. |
-| `ArtifactDownloader` | `internal/artifacts` | Baixa artefatos remotos. |
-| `ChecksumVerifier` | `internal/artifacts` | Verifica integridade de arquivos baixados. |
-| `CacheManager` | `internal/artifacts` | Controla cache local de artefatos. |
-| `OutputFormatter` | `internal/cli/*/formatter` | Converte resultados internos em mensagens legíveis no terminal. |
-| `ErrorHandler` | `internal/errors` | Converte erros técnicos em mensagens orientativas. |
+## 9.4 Classes de controle
 
-#### 9.2.2 Serviços em Java
+As classes de controle recebem comandos, requisições ou eventos externos e encaminham para serviços apropriados.
 
-| Serviço | Pacote sugerido | Responsabilidade |
-|---|---|---|
-| `SignatureService` | `service` | Interface para operações `sign` e `validate`. |
-| `FakeSignatureService` | `service` | Implementa assinatura e validação simuladas. |
-| `ParameterValidator` | `validation` | Valida presença, formato e consistência dos parâmetros. |
-| `PKCS11Adapter` | `pkcs11` | Encapsula a comunicação com dispositivo criptográfico. |
-| `CliCommandParser` | `cli` | Interpreta argumentos recebidos via modo local. |
-| `GlobalExceptionHandler` | `error` | Converte exceções em respostas padronizadas. |
+### 9.4.1 Controles em Go
 
-### 9.3 Classes de repositório
-
-As classes de repositório controlam acesso a dados persistidos localmente. O sistema não possui banco de dados relacional; a persistência é feita em arquivos locais, preferencialmente no diretório `~/.hubsaude/`.
-
-#### 9.3.1 Repositórios em Go
-
-| Repositório | Pacote sugerido | Responsabilidade |
-|---|---|---|
-| `ProcessRegistry` | `internal/process` | Salvar, ler, atualizar e remover registros de processos. |
-| `MetadataRepository` | `internal/config` ou `internal/artifacts` | Salvar e ler metadados de versões, artefatos e downloads. |
-| `CacheRepository` | `internal/artifacts` | Gerenciar arquivos em cache, como `release.json` e checksums. |
-| `LocalFileRepository` | `internal/config` | Centralizar operações de leitura e escrita no diretório gerenciado. |
-| `LogRepository` | `internal/config` ou `internal/logging` | Registrar eventos operacionais, quando implementado. |
-
-#### 9.3.2 Repositórios em Java
-
-O `assinador.jar` não deve persistir assinaturas nem resultados de assinatura. Assim, os repositórios Java são opcionais e limitados a configuração local.
-
-| Repositório | Responsabilidade |
+| Classe/Componente | Responsabilidade |
 |---|---|
-| `Pkcs11ConfigRepository` | Ler configuração local de PKCS#11, se adotado arquivo de configuração. |
-| `ServerConfigRepository` | Ler parâmetros de execução do servidor, quando necessário. |
+| `AssinaturaRootCommand` | Define comando raiz do CLI `assinatura`. |
+| `SignCommand` | Recebe parâmetros do usuário para criar assinatura simulada. |
+| `ValidateCommand` | Recebe parâmetros do usuário para validar assinatura simulada. |
+| `AssinaturaStopCommand` | Recebe comando para encerrar `assinador.jar` em modo servidor. |
+| `AssinaturaVersionCommand` | Exibe versão atual do CLI. |
+| `SimuladorRootCommand` | Define comando raiz do CLI `simulador`. |
+| `SimulatorStartCommand` | Recebe comando para iniciar o Simulador do HubSaúde. |
+| `SimulatorStopCommand` | Recebe comando para parar o Simulador do HubSaúde. |
+| `SimulatorStatusCommand` | Recebe comando para consultar status do Simulador do HubSaúde. |
 
-### 9.4 Classes de controle
+### 9.4.2 Controles em Java
 
-As classes de controle recebem comandos ou requisições externas e chamam serviços internos.
-
-#### 9.4.1 Controladores em Go
-
-| Controlador / comando | Pacote sugerido | Responsabilidade |
-|---|---|---|
-| `RootCommand` | `internal/cli/assinatura/commands` | Define comando raiz `assinatura`. |
-| `SignCommandHandler` | `internal/cli/assinatura/commands` | Recebe comando `assinatura sign`. |
-| `ValidateCommandHandler` | `internal/cli/assinatura/commands` | Recebe comando `assinatura validate`. |
-| `StopCommandHandler` | `internal/cli/assinatura/commands` | Recebe comando `assinatura stop`. |
-| `VersionCommandHandler` | `internal/cli/assinatura/commands` | Recebe comando `assinatura version`. |
-| `SimulatorRootCommand` | `internal/cli/simulador/commands` | Define comando raiz `simulador`. |
-| `StartCommandHandler` | `internal/cli/simulador/commands` | Recebe comando `simulador start`. |
-| `SimulatorStopCommandHandler` | `internal/cli/simulador/commands` | Recebe comando `simulador stop`. |
-| `StatusCommandHandler` | `internal/cli/simulador/commands` | Recebe comando `simulador status`. |
-
-#### 9.4.2 Controladores em Java
-
-| Controlador | Endpoint / entrada | Responsabilidade |
-|---|---|---|
-| `CliAdapter` | Argumentos de linha de comando | Receber chamadas locais via `java -jar`. |
-| `SignatureController` | `POST /sign`, `POST /validate` | Receber requisições HTTP de assinatura e validação. |
-| `HealthController` | `GET /health` | Informar se o `assinador.jar` está ativo. |
-| `GlobalExceptionHandler` | Exceções internas | Padronizar respostas de erro. |
+| Classe | Responsabilidade |
+|---|---|
+| `CliEntryPoint` | Recebe argumentos de modo local e aciona serviços de assinatura/validação. |
+| `SignatureController` | Expõe endpoints HTTP `/sign` e `/validate`. |
+| `HealthController` ou equivalente | Expõe endpoints de health/readiness. |
+| `ShutdownController` ou equivalente | Expõe endpoint de encerramento controlado do servidor. |
 
 ---
 
-## 10. Projeto dos métodos principais
+# 10. Projeto dos métodos principais
 
-Esta seção descreve os principais métodos previstos. As assinaturas são conceituais e podem ser adaptadas conforme a linguagem e bibliotecas utilizadas.
+## 10.1 Métodos principais do CLI `assinatura`
 
-### 10.1 Métodos principais do CLI `assinatura`
+| Método | Entrada | Saída | Responsabilidade | Erros tratados |
+|---|---|---|---|---|
+| `main()` | Argumentos do processo | Código de saída | Inicializar comando raiz e executar CLI. | Erro de parsing, erro interno. |
+| `NewAssinaturaCommand(version)` | Versão do build | Comando Cobra | Criar árvore de comandos do CLI. | Configuração inválida. |
+| `Sign(ctx, options)` | Opções do comando `sign` | `SignResponse` | Orquestrar criação de assinatura. | Parâmetro ausente, servidor indisponível, JAR ausente. |
+| `Validate(ctx, options)` | Opções do comando `validate` | `ValidateResponse` | Orquestrar validação de assinatura. | Payload inválido, resposta malformada, erro do JAR. |
+| `Resolve(ctx, options)` | Flags e contexto | `ExecutionMode` | Escolher entre modo local e servidor. | Modo incompatível, porta inválida. |
+| `EnsureRunning(ctx, port)` | Porta | `ServerStatus` | Garantir que `assinador.jar` esteja ativo em modo servidor. | Porta ocupada, health check falhou, Java ausente. |
+| `Invoke(ctx, args)` | Lista de argumentos | `InvocationResult` | Invocar `java -jar assinador.jar` em modo local. | Exit code não zero, timeout, Java ausente. |
+| `Stop(ctx, port)` | Porta | `ServerStatus` | Encerrar servidor do `assinador.jar`. | Processo inexistente, falha no shutdown. |
+| `FormatSignResponse(resp)` | Resposta de assinatura | Texto | Apresentar resultado ao usuário. | Campos ausentes ou resposta inválida. |
+| `Map(err)` | Erro interno | `AppError` | Padronizar erro, mensagem e código de saída. | Erro desconhecido. |
 
-#### `SignUseCase.Execute(command SignCommand) (OperationResult, error)`
+## 10.2 Métodos principais do CLI `simulador`
 
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Executar o fluxo de criação de assinatura simulada. |
-| Entrada | `SignCommand` com parâmetros informados pelo usuário. |
-| Saída | `OperationResult` com assinatura simulada ou erro. |
-| Passos | Validar comando; resolver Java; verificar modo servidor/local; invocar `assinador.jar`; formatar resultado. |
-| Erros tratados | Parâmetro ausente, Java ausente, jar não encontrado, servidor indisponível, erro HTTP, erro de execução local. |
+| Método | Entrada | Saída | Responsabilidade | Erros tratados |
+|---|---|---|---|---|
+| `NewSimuladorCommand(version)` | Versão do build | Comando Cobra | Criar comandos `start`, `stop`, `status`. | Configuração inválida. |
+| `Start(ctx, options)` | Porta, URL opcional, flags | `ServerStatus` | Iniciar Simulador do HubSaúde. | Porta ocupada, JAR ausente, download falhou. |
+| `Stop(ctx, port)` | Porta | `ServerStatus` | Encerrar simulador por endpoint ou processo. | Falha no shutdown, processo inexistente. |
+| `Status(ctx, port)` | Porta | `ServerStatus` | Consultar `/api/info` e metadados locais. | Conexão recusada, resposta malformada. |
+| `EnsureSimulatorJar(ctx, source)` | URL/fonte | Caminho local | Garantir que `simulador.jar` exista localmente. | Falha de download, checksum inválido. |
+| `CheckPort(port)` | Porta | Booleano/resultado | Verificar disponibilidade da porta. | Porta inválida, permissão negada. |
+| `WaitUntilReady(ctx, endpoint)` | URL de readiness | `ServerStatus` | Aguardar serviço pronto. | Timeout, resposta inválida. |
 
-#### `ValidateUseCase.Execute(command ValidateCommand) (OperationResult, error)`
+## 10.3 Métodos principais do `assinador.jar`
 
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Executar o fluxo de validação simulada de assinatura. |
-| Entrada | `ValidateCommand`. |
-| Saída | `OperationResult` indicando assinatura válida ou inválida. |
-| Passos | Validar comando; resolver Java; escolher invocação; chamar `assinador.jar`; formatar retorno. |
-| Erros tratados | Parâmetros inválidos, servidor indisponível, erro de validação, falha de comunicação. |
+| Método | Entrada | Saída | Responsabilidade | Erros tratados |
+|---|---|---|---|---|
+| `main(String[] args)` | Argumentos Java | Código de saída | Escolher modo CLI/local ou servidor. | Argumento inválido, falha de inicialização. |
+| `sign(SignRequest request)` | Dados de assinatura | `SignResponse` | Validar e simular assinatura. | Parâmetro inválido, erro de simulação. |
+| `validate(ValidateRequest request)` | Dados de validação | `ValidateResponse` | Validar e simular validação. | Parâmetro inválido, assinatura ausente. |
+| `validateSign(request)` | Solicitação de assinatura | `ValidationResult` | Validar parâmetros de criação. | Campos obrigatórios ausentes, formato inválido. |
+| `validateValidation(request)` | Solicitação de validação | `ValidationResult` | Validar parâmetros de validação. | Campos obrigatórios ausentes, formato inválido. |
+| `createFakeSignature(request)` | Solicitação validada | Valor simulado | Gerar resposta pré-construída. | Falha interna de simulação. |
+| `checkPkcs11Availability()` | Configuração PKCS#11 | Resultado | Verificar disponibilidade de token/simulador. | Provider ausente, slot inválido. |
+| `health()` | Nenhuma | Status | Indicar que servidor está vivo. | Falha interna. |
+| `ready()` | Nenhuma | Status | Indicar que servidor está pronto. | Inicialização incompleta. |
+| `shutdown()` | Nenhuma | Confirmação | Encerrar servidor de forma controlada. | Falha ao encerrar. |
+| `resetIdleTimer()` | Evento de requisição | Nenhuma | Reiniciar contagem de inatividade. | Falha de agenda/timer. |
 
-#### `StopAssinadorUseCase.Execute(port int) error`
+## 10.4 Contratos de retorno dos métodos
 
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Encerrar o `assinador.jar` em modo servidor. |
-| Entrada | Porta informada ou porta padrão. |
-| Saída | Erro ou confirmação de encerramento. |
-| Passos | Consultar registro; verificar processo; enviar shutdown ou encerrar processo; atualizar registro. |
-| Erros tratados | Processo inexistente, porta inválida, falha ao encerrar, registro desatualizado. |
+Os métodos que executam operações relevantes devem retornar objetos estruturados, evitando depender apenas de texto livre. Recomenda-se que respostas internas tenham pelo menos:
 
-#### `JavaRuntimeResolver.Resolve() (JavaRuntime, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Obter Java compatível para execução das aplicações Java. |
-| Entrada | Configuração de versão esperada. |
-| Saída | Caminho do executável Java. |
-| Passos | Verificar Java em `~/.hubsaude/`; verificar Java no PATH; validar versão; baixar se ausente; retornar caminho. |
-| Erros tratados | Download indisponível, versão incompatível, permissões de arquivo, checksum inválido. |
-
-#### `LocalJarInvoker.Invoke(jarPath string, args []string) (OperationResult, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Executar `java -jar` com argumentos. |
-| Entrada | Caminho do `.jar` e argumentos. |
-| Saída | Resultado capturado de stdout/stderr. |
-| Passos | Montar comando; executar processo; capturar saída; mapear retorno. |
-| Erros tratados | Java não encontrado, jar ausente, código de saída diferente de zero, timeout de execução. |
-
-#### `AssinadorHttpClient.Sign(request SignCommand) (OperationResult, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Enviar requisição HTTP para criação de assinatura. |
-| Entrada | Dados de assinatura. |
-| Saída | Resultado da assinatura simulada. |
-| Endpoint | `POST /sign`. |
-| Erros tratados | Conexão recusada, timeout, resposta inválida, status HTTP de erro. |
-
-#### `AssinadorHttpClient.Validate(request ValidateCommand) (OperationResult, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Enviar requisição HTTP para validação de assinatura. |
-| Entrada | Dados de validação. |
-| Saída | Resultado da validação simulada. |
-| Endpoint | `POST /validate`. |
-| Erros tratados | Conexão recusada, timeout, resposta inválida, status HTTP de erro. |
-
-### 10.2 Métodos principais do CLI `simulador`
-
-#### `StartSimulatorUseCase.Execute(config SimulatorConfig) (SimulatorStatus, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Iniciar o Simulador do HubSaúde. |
-| Entrada | Porta, URL de origem e configurações. |
-| Saída | Status do simulador iniciado. |
-| Passos | Verificar porta; resolver release; baixar jar se necessário; verificar checksum; resolver Java; iniciar processo; registrar PID; consultar status. |
-| Erros tratados | Porta ocupada, download falho, checksum inválido, Java ausente, processo não iniciado. |
-
-#### `StopSimulatorUseCase.Execute(port int) error`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Encerrar o Simulador do HubSaúde. |
-| Entrada | Porta padrão ou informada. |
-| Saída | Confirmação ou erro. |
-| Passos | Consultar registro; chamar `/shutdown`; aguardar encerramento; atualizar registro. |
-| Erros tratados | Simulador não encontrado, endpoint indisponível, falha no encerramento. |
-
-#### `StatusSimulatorUseCase.Execute(port int) (SimulatorStatus, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Consultar o status do Simulador. |
-| Entrada | Porta padrão ou informada. |
-| Saída | Status, PID e porta. |
-| Passos | Consultar registro; chamar `/api/info`; validar resposta; retornar status. |
-| Erros tratados | Registro inexistente, processo inativo, endpoint indisponível. |
-
-#### `ReleaseResolver.Resolve(source string) (ReleaseMetadata, error)`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Identificar versão e URL do artefato mais recente. |
-| Entrada | URL padrão ou alternativa. |
-| Saída | `ReleaseMetadata`. |
-| Passos | Baixar `release.json`; interpretar conteúdo; comparar versão local; retornar metadados. |
-| Erros tratados | URL inválida, JSON inválido, versão ausente, rede indisponível. |
-
-#### `ChecksumVerifier.Verify(filePath string, expected string) error`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Verificar a integridade de arquivo baixado. |
-| Entrada | Caminho do arquivo e hash esperado. |
-| Saída | Sucesso ou erro. |
-| Passos | Calcular SHA256; comparar com valor esperado; rejeitar divergência. |
-| Erros tratados | Arquivo inexistente, leitura falha, hash divergente. |
-
-### 10.3 Métodos principais do `assinador.jar`
-
-#### `SignatureController.sign(SignRequest request): SignResponse`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Receber requisição HTTP de criação de assinatura. |
-| Entrada | `SignRequest`. |
-| Saída | `SignResponse`. |
-| Passos | Validar requisição; chamar `SignatureService.sign`; retornar resposta padronizada. |
-| Erros tratados | Parâmetros inválidos, falha no serviço, dispositivo indisponível. |
-
-#### `SignatureController.validate(ValidateRequest request): ValidateResponse`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Receber requisição HTTP de validação de assinatura. |
-| Entrada | `ValidateRequest`. |
-| Saída | `ValidateResponse`. |
-| Passos | Validar requisição; chamar `SignatureService.validate`; retornar resultado. |
-| Erros tratados | Parâmetros inválidos, assinatura ausente, falha de validação simulada. |
-
-#### `ParameterValidator.validateSignRequest(SignRequest request): ValidationResult`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Validar parâmetros de criação de assinatura. |
-| Entrada | `SignRequest`. |
-| Saída | `ValidationResult`. |
-| Validações | Presença de campos obrigatórios, formato, consistência e valores permitidos. |
-
-#### `ParameterValidator.validateValidateRequest(ValidateRequest request): ValidationResult`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Validar parâmetros de validação de assinatura. |
-| Entrada | `ValidateRequest`. |
-| Saída | `ValidationResult`. |
-| Validações | Presença de documento, assinatura e parâmetros obrigatórios; formato dos campos. |
-
-#### `FakeSignatureService.sign(SignRequest request): SignResponse`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Gerar resposta simulada de assinatura. |
-| Entrada | `SignRequest` válido. |
-| Saída | `SignResponse` com assinatura simulada. |
-| Observação | Não deve executar assinatura criptográfica real. |
-
-#### `FakeSignatureService.validate(ValidateRequest request): ValidateResponse`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Gerar resultado simulado de validação. |
-| Entrada | `ValidateRequest` válido. |
-| Saída | `ValidateResponse` indicando válido ou inválido por critério predeterminado. |
-| Observação | Não deve executar validação criptográfica real. |
-
-#### `PKCS11Adapter.checkAvailability(): boolean`
-
-| Aspecto | Descrição |
-|---|---|
-| Responsabilidade | Verificar disponibilidade de dispositivo criptográfico ou simulador. |
-| Entrada | Configuração PKCS#11. |
-| Saída | `true` se disponível; `false` ou exceção controlada se ausente. |
-| Erros tratados | Biblioteca ausente, token não conectado, configuração inválida. |
+- indicador de sucesso ou falha;
+- código da operação;
+- mensagem legível;
+- dados da operação;
+- lista de erros, quando aplicável;
+- timestamp;
+- código de saída ou status HTTP, quando aplicável.
 
 ---
 
-## 11. Projeto dos dados
+# 11. Projeto dos dados
 
-### 11.1 Entidades
+## 11.1 Entidades
 
-As entidades principais do sistema são apresentadas a seguir.
+As entidades do sistema são divididas em três grupos: entidades de domínio, entidades operacionais e entidades de distribuição.
 
-| Entidade | Descrição | Origem |
-|---|---|---|
-| `SignCommand` | Dados recebidos pelo CLI para criação de assinatura simulada. | CLI `assinatura`. |
-| `ValidateCommand` | Dados recebidos pelo CLI para validação de assinatura simulada. | CLI `assinatura`. |
-| `SignRequest` | Requisição interna ou HTTP para criação de assinatura no `assinador.jar`. | `assinador.jar`. |
-| `ValidateRequest` | Requisição interna ou HTTP para validação no `assinador.jar`. | `assinador.jar`. |
-| `SignResponse` | Resultado simulado de criação de assinatura. | `assinador.jar`. |
-| `ValidateResponse` | Resultado simulado de validação. | `assinador.jar`. |
-| `ProcessMetadata` | Registro de processo em execução. | CLIs. |
-| `JavaRuntime` | Informações sobre JDK/JRE disponível. | Módulo Java Runtime. |
-| `ReleaseMetadata` | Informações sobre artefato remoto. | Módulo de artefatos. |
-| `SimulatorStatus` | Estado atual do Simulador do HubSaúde. | CLI `simulador`. |
-| `ErrorResponse` | Representação padronizada de erro. | CLIs e `assinador.jar`. |
+### 11.1.1 Entidades de domínio
 
-### 11.2 Campos
+| Entidade | Descrição |
+|---|---|
+| `SignRequest` | Solicitação de criação de assinatura simulada. |
+| `SignResponse` | Resposta com assinatura simulada. |
+| `ValidateRequest` | Solicitação de validação de assinatura simulada. |
+| `ValidateResponse` | Resultado de validação simulada. |
+| `ValidationError` | Erro de validação de um campo ou parâmetro. |
+| `ErrorResponse` | Estrutura padronizada de erro para CLI/HTTP. |
 
-#### 11.2.1 `SignCommand`
+### 11.1.2 Entidades operacionais
 
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `documento` | string | Sim | Caminho ou identificador do documento a ser assinado. |
-| `certificado` | string | Condicional | Caminho ou identificador do certificado, quando exigido. |
-| `algoritmo` | string | Não | Algoritmo conceitual informado para simulação. |
-| `modo` | string | Não | Modo de execução: `local` ou `server`. |
-| `porta` | int | Não | Porta do `assinador.jar` em modo servidor. |
-| `timeout` | int | Não | Tempo de inatividade para encerramento automático. |
+| Entidade | Descrição |
+|---|---|
+| `ProcessInfo` | Informações de processo gerenciado pelo Runner. |
+| `ServerStatus` | Estado atual de um servidor local. |
+| `RuntimeConfig` | Configurações de execução dos CLIs. |
+| `JdkInfo` | Informações sobre JDK/JRE detectado ou provisionado. |
+| `ArtifactMetadata` | Dados de artefato local ou remoto. |
+| `DownloadResult` | Resultado do processo de download. |
 
-#### 11.2.2 `ValidateCommand`
+### 11.1.3 Entidades de distribuição
 
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `documento` | string | Sim | Caminho ou identificador do documento associado à assinatura. |
-| `assinatura` | string | Sim | Caminho ou valor da assinatura simulada. |
-| `certificado` | string | Condicional | Certificado usado na validação, quando exigido. |
-| `modo` | string | Não | Modo de execução: `local` ou `server`. |
-| `porta` | int | Não | Porta do `assinador.jar` em modo servidor. |
+| Entidade | Descrição |
+|---|---|
+| `ReleaseMetadata` | Informações obtidas de `release.json` ou GitHub Releases. |
+| `ChecksumEntry` | Hash SHA256 associado a um artefato. |
+| `CosignSignature` | Referência a arquivos `.sig` e `.pem` de um artefato assinado. |
 
-#### 11.2.3 `SignRequest`
+## 11.2 Campos
+
+### 11.2.1 Campos sugeridos para `SignRequest`
 
 | Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `document` | string | Sim | Conteúdo, caminho ou identificador do documento. |
-| `certificate` | string | Condicional | Certificado ou identificador associado. |
-| `parameters` | map/string | Não | Parâmetros adicionais da operação. |
+|---|---|---:|---|
+| `documentPath` | string | Sim | Caminho do documento a ser assinado ou referência equivalente. |
+| `profile` | string | Não | Perfil ou modo de assinatura simulada, quando aplicável. |
+| `parameters` | map/string | Não | Parâmetros adicionais definidos pelo contrato. |
+| `mode` | string | Não | Modo de execução: `local` ou `server`. |
+| `timestamp` | datetime | Não | Momento da solicitação. |
 
-#### 11.2.4 `SignResponse`
-
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `success` | boolean | Sim | Indica se a operação simulada foi bem-sucedida. |
-| `operation` | string | Sim | Nome da operação, por exemplo `sign`. |
-| `signature` | string | Sim em sucesso | Assinatura simulada retornada. |
-| `message` | string | Sim | Mensagem explicativa. |
-| `errors` | list | Não | Lista de erros, quando houver. |
-
-#### 11.2.5 `ValidateRequest`
+### 11.2.2 Campos sugeridos para `SignResponse`
 
 | Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `document` | string | Sim | Documento associado à assinatura. |
-| `signature` | string | Sim | Assinatura a validar. |
-| `certificate` | string | Condicional | Certificado ou identificador usado na validação. |
-| `parameters` | map/string | Não | Parâmetros adicionais. |
+|---|---|---:|---|
+| `signatureId` | string | Sim | Identificador da assinatura simulada. |
+| `status` | string | Sim | Status da operação. |
+| `signatureValue` | string | Sim | Valor simulado da assinatura. |
+| `algorithm` | string | Não | Algoritmo declarado para simulação. |
+| `createdAt` | datetime | Sim | Data/hora da criação simulada. |
+| `message` | string | Sim | Mensagem legível para o usuário. |
 
-#### 11.2.6 `ValidateResponse`
-
-| Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `success` | boolean | Sim | Indica se a requisição foi processada. |
-| `operation` | string | Sim | Nome da operação, por exemplo `validate`. |
-| `valid` | boolean | Sim em sucesso | Resultado simulado de validade. |
-| `message` | string | Sim | Mensagem explicativa. |
-| `errors` | list | Não | Lista de erros, quando houver. |
-
-#### 11.2.7 `ProcessMetadata`
+### 11.2.3 Campos sugeridos para `ValidateRequest`
 
 | Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `application` | string | Sim | Nome da aplicação: `assinador` ou `simulador`. |
-| `pid` | int | Sim | Identificador do processo. |
-| `port` | int | Sim | Porta usada pelo processo. |
-| `mode` | string | Sim | Modo de execução, por exemplo `server`. |
+|---|---|---:|---|
+| `signaturePath` | string | Condicional | Caminho para arquivo de assinatura, quando aplicável. |
+| `signatureValue` | string | Condicional | Valor da assinatura simulada, quando informado diretamente. |
+| `documentPath` | string | Não | Caminho do documento associado. |
+| `parameters` | map/string | Não | Parâmetros adicionais de validação. |
+| `timestamp` | datetime | Não | Momento da solicitação. |
+
+### 11.2.4 Campos sugeridos para `ValidateResponse`
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---:|---|
+| `valid` | boolean | Sim | Indica se a assinatura foi considerada válida na simulação. |
+| `status` | string | Sim | Status da operação. |
+| `reason` | string | Não | Motivo do resultado. |
+| `validatedAt` | datetime | Sim | Data/hora da validação simulada. |
+| `message` | string | Sim | Mensagem legível para o usuário. |
+
+### 11.2.5 Campos sugeridos para `ProcessInfo`
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---:|---|
+| `name` | string | Sim | Nome lógico do processo: `assinador` ou `simulador`. |
+| `pid` | integer | Sim | Identificador do processo no sistema operacional. |
+| `port` | integer | Sim | Porta usada pelo processo. |
+| `command` | string/list | Sim | Comando usado para iniciar o processo. |
 | `startedAt` | datetime | Sim | Data/hora de início. |
-| `healthEndpoint` | string | Não | Endpoint usado para health check. |
-| `status` | string | Não | Estado conhecido do processo. |
+| `status` | string | Sim | Status conhecido: `starting`, `running`, `stopped`, `unknown`. |
+| `version` | string | Não | Versão do artefato executado, quando disponível. |
 
-#### 11.2.8 `ReleaseMetadata`
+### 11.2.6 Campos sugeridos para `ArtifactMetadata`
 
 | Campo | Tipo | Obrigatório | Descrição |
-|---|---|---|---|
-| `artifact` | string | Sim | Nome do artefato. |
-| `version` | string | Sim | Versão do artefato. |
-| `url` | string | Sim | URL de download. |
-| `checksumSha256` | string | Condicional | Hash esperado do arquivo. |
-| `downloadedAt` | datetime | Não | Data/hora do download local. |
+|---|---|---:|---|
+| `name` | string | Sim | Nome do artefato. |
+| `version` | string | Sim | Versão SemVer ou identificador equivalente. |
+| `url` | string | Sim | URL de origem. |
+| `sha256` | string | Condicional | Checksum esperado. |
+| `localPath` | string | Sim | Caminho local após download. |
+| `downloadedAt` | datetime | Não | Data/hora de download. |
+| `verified` | boolean | Sim | Indica se a integridade foi verificada. |
 
-### 11.3 Relacionamentos
+## 11.3 Relacionamentos
 
 | Relacionamento | Descrição |
 |---|---|
-| `SignCommand` → `SignRequest` | O CLI converte parâmetros do terminal em requisição para o `assinador.jar`. |
-| `ValidateCommand` → `ValidateRequest` | O CLI converte parâmetros de validação em requisição para o `assinador.jar`. |
-| `SignRequest` → `ParameterValidator` | Toda requisição de assinatura deve ser validada antes da simulação. |
-| `ValidateRequest` → `ParameterValidator` | Toda requisição de validação deve ser validada antes da resposta simulada. |
-| `ParameterValidator` → `FakeSignatureService` | Apenas requisições válidas seguem para o serviço de simulação. |
-| `FakeSignatureService` → `SignResponse` / `ValidateResponse` | O serviço gera respostas simuladas padronizadas. |
-| `ProcessMetadata` → `ProcessRegistry` | O registro de processo é salvo e consultado por repositório local. |
-| `ReleaseMetadata` → `ArtifactDownloader` | O downloader usa metadados para obter artefatos. |
-| `ReleaseMetadata` → `ChecksumVerifier` | O checksum esperado é usado para verificar arquivo baixado. |
-| `JavaRuntime` → `LocalJarInvoker` | O invocador usa o executável Java resolvido pelo runtime. |
+| `SignRequest` gera `SignResponse` | Uma solicitação válida de assinatura produz uma resposta simulada. |
+| `ValidateRequest` gera `ValidateResponse` | Uma solicitação válida de validação produz um resultado simulado. |
+| `ValidationResult` contém `ValidationError` | Uma validação pode gerar zero ou mais erros. |
+| `ProcessInfo` descreve um servidor | Cada processo gerenciado deve ter PID, porta e status associados. |
+| `ArtifactMetadata` descreve um artefato local/remoto | Cada JAR, JDK ou binário pode ser rastreado por nome, versão, checksum e local. |
+| `RuntimeConfig` influencia invocações | Configurações como porta, timeout e modo afetam os serviços. |
+| `JdkInfo` é usado por invocadores Java | O caminho do Java detectado/provisionado é usado para executar os JARs. |
+| `ErrorResponse` representa falhas de serviços | Falhas de validação, sistema ou integração devem gerar erro estruturado. |
 
-### 11.4 Restrições
+## 11.4 Restrições
 
-| Restrição | Descrição |
+| ID | Restrição de dados |
 |---|---|
-| Parâmetros obrigatórios | Requisições sem campos obrigatórios devem ser rejeitadas. |
-| Formato de porta | Porta deve ser número inteiro válido e disponível. |
-| Diretório local | Dados operacionais devem ser armazenados em `~/.hubsaude/`. |
-| Sem persistência de assinatura | Assinaturas simuladas não devem ser armazenadas permanentemente. |
-| Versão Java | O `assinador.jar` deve ser executado com Java 21 compatível. |
-| Arquitetura suportada | Binários devem ser gerados para Windows, Linux e macOS em amd64. |
-| Checksum | Artefatos baixados devem ser aceitos apenas se checksum for válido, quando disponível. |
-| Processo ativo | Registro de PID não basta; deve ser confirmado por health check quando possível. |
-| Modo servidor | Deve usar HTTP para `/sign` e `/validate`. |
-| Simulador | A porta padrão do Simulador do HubSaúde é 8443. |
+| RD-01 | Dados de assinatura e validação são simulados e não devem ser tratados como assinatura digital real. |
+| RD-02 | Assinaturas simuladas não devem ser armazenadas como histórico de negócio. |
+| RD-03 | Campos obrigatórios devem ser validados pelo `assinador.jar`. |
+| RD-04 | Portas devem ser números inteiros válidos no intervalo permitido pelo sistema operacional. |
+| RD-05 | Metadados locais devem ser gravados em formato legível e simples, preferencialmente JSON. |
+| RD-06 | Escritas de metadados devem ser atômicas sempre que possível, evitando arquivos corrompidos. |
+| RD-07 | Checksums devem ser comparados antes de executar artefatos baixados quando o checksum estiver disponível. |
+| RD-08 | Caminhos locais devem respeitar diferenças entre Windows, Linux e macOS. |
+| RD-09 | Logs não devem registrar segredos ou dados sensíveis desnecessários. |
+| RD-10 | O sistema deve usar UTF-8 para arquivos de texto e mensagens. |
 
 ---
 
-## 12. Projeto das interfaces ou endpoints
+# 12. Projeto das interfaces ou endpoints
 
-### 12.1 Interface CLI `assinatura`
+## 12.1 Interface CLI `assinatura`
 
-#### 12.1.1 Comando `assinatura version`
+### 12.1.1 Comando raiz
+
+```bash
+assinatura [comando] [opções]
+```
+
+Responsabilidades:
+
+- exibir ajuda geral;
+- direcionar para subcomandos;
+- aplicar opções globais;
+- retornar código de saída adequado.
+
+### 12.1.2 Comando `version`
 
 ```bash
 assinatura version
 ```
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Exibir a versão atual do CLI. |
-| Entrada | Nenhuma obrigatória. |
-| Saída esperada | Versão do binário, por exemplo `assinatura version v0.1.0`. |
-| Requisitos relacionados | RF-002, US-01.1 |
+Saída esperada:
 
-#### 12.1.2 Comando `assinatura sign`
-
-```bash
-assinatura sign --documento <arquivo> --certificado <arquivo> [--local] [--port <porta>] [--timeout <minutos>]
+```text
+assinatura v0.1.0
 ```
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Criar assinatura digital simulada. |
-| Entrada obrigatória | Documento e demais parâmetros definidos para o caso de uso. |
-| Saída esperada | Resultado formatado com assinatura simulada. |
-| Modos | Local via `java -jar` ou servidor via HTTP. |
-| Requisitos relacionados | RF-003, RF-005, RF-006, RF-008, RF-011, RF-019 |
-
-#### 12.1.3 Comando `assinatura validate`
+### 12.1.3 Comando `sign`
 
 ```bash
-assinatura validate --documento <arquivo> --assinatura <arquivo> [--local] [--port <porta>]
+assinatura sign [parâmetros] [--local] [--port <porta>] [--timeout <minutos>]
 ```
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Validar assinatura simulada. |
-| Entrada obrigatória | Documento e assinatura. |
-| Saída esperada | Resultado simulado indicando assinatura válida ou inválida. |
-| Modos | Local via `java -jar` ou servidor via HTTP. |
-| Requisitos relacionados | RF-004, RF-005, RF-006, RF-008, RF-011, RF-022 |
+Responsabilidades:
 
-#### 12.1.4 Comando `assinatura stop`
+- receber parâmetros de criação de assinatura;
+- decidir modo de execução;
+- garantir disponibilidade do `assinador.jar`;
+- invocar o serviço local ou HTTP;
+- exibir assinatura simulada ou erro.
+
+### 12.1.4 Comando `validate`
+
+```bash
+assinatura validate [parâmetros] [--local] [--port <porta>]
+```
+
+Responsabilidades:
+
+- receber parâmetros de validação;
+- decidir modo de execução;
+- invocar o `assinador.jar`;
+- exibir resultado de validação simulada.
+
+### 12.1.5 Comando `stop`
 
 ```bash
 assinatura stop [--port <porta>]
 ```
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Encerrar `assinador.jar` em modo servidor. |
-| Entrada | Porta opcional. |
-| Saída esperada | Confirmação de encerramento ou mensagem de processo não encontrado. |
-| Requisitos relacionados | RF-015 |
+Responsabilidades:
 
-### 12.2 Interface CLI `simulador`
+- localizar instância do `assinador.jar` em modo servidor;
+- solicitar shutdown por endpoint ou mecanismo definido;
+- atualizar metadados locais;
+- informar resultado ao usuário.
 
-#### 12.2.1 Comando `simulador start`
+## 12.2 Interface CLI `simulador`
 
-```bash
-simulador start [--port <porta>] [--source <url>]
-```
-
-| Item | Descrição |
-|---|---|
-| Finalidade | Iniciar o Simulador do HubSaúde. |
-| Entrada | Porta opcional e URL alternativa opcional. |
-| Saída esperada | Status, porta e PID do simulador. |
-| Requisitos relacionados | RF-030, RF-031, RF-035, RF-036 |
-
-#### 12.2.2 Comando `simulador stop`
+### 12.2.1 Comando raiz
 
 ```bash
-simulador stop [--port <porta>]
+simulador [comando] [opções]
 ```
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Parar o Simulador do HubSaúde. |
-| Entrada | Porta opcional. |
-| Saída esperada | Confirmação de encerramento. |
-| Requisitos relacionados | RF-032 |
-
-#### 12.2.3 Comando `simulador status`
+### 12.2.2 Comando `start`
 
 ```bash
-simulador status [--port <porta>]
+simulador start [--port 8443] [--source <url>]
 ```
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Consultar status do Simulador do HubSaúde. |
-| Entrada | Porta opcional. |
-| Saída esperada | Indicação de execução, porta e PID. |
-| Requisitos relacionados | RF-033 |
+Responsabilidades:
 
-### 12.3 Endpoints HTTP do `assinador.jar`
+- verificar porta;
+- garantir `simulador.jar` local;
+- garantir JDK/JRE compatível;
+- iniciar processo;
+- aguardar readiness;
+- registrar PID, porta e versão.
 
-#### 12.3.1 `POST /sign`
+### 12.2.3 Comando `status`
 
-| Item | Descrição |
-|---|---|
-| Finalidade | Criar assinatura simulada. |
-| Método | POST |
-| Entrada | JSON compatível com `SignRequest`. |
-| Saída | JSON compatível com `SignResponse`. |
-| Sucesso | HTTP 200. |
-| Erro de parâmetro | HTTP 400. |
-| Erro interno | HTTP 500. |
+```bash
+simulador status [--port 8443]
+```
 
-Exemplo conceitual de requisição:
+Responsabilidades:
+
+- consultar metadados locais;
+- consultar `/api/info`;
+- informar se o simulador está parado, iniciando, ativo ou indisponível.
+
+### 12.2.4 Comando `stop`
+
+```bash
+simulador stop [--port 8443]
+```
+
+Responsabilidades:
+
+- localizar instância ativa;
+- solicitar encerramento por `/shutdown`;
+- confirmar encerramento;
+- atualizar metadados.
+
+## 12.3 Interface local CLI `assinatura` ↔ `assinador.jar`
+
+Formato conceitual:
+
+```bash
+java -jar assinador.jar sign [parâmetros]
+java -jar assinador.jar validate [parâmetros]
+java -jar assinador.jar server --port <porta> --timeout <minutos>
+```
+
+Contrato obrigatório:
+
+- argumentos devem ser passados como lista, não como string concatenada;
+- `stdout` deve conter resultado da operação;
+- `stderr` deve conter diagnósticos e erros;
+- exit code `0` deve indicar sucesso;
+- exit codes diferentes de `0` devem diferenciar erro de usuário e erro de sistema.
+
+## 12.4 Endpoints HTTP do `assinador.jar`
+
+| Método | Endpoint | Entrada | Saída | Status esperados |
+|---|---|---|---|---|
+| `GET` | `/health` | Nenhuma | Status simples do servidor | `200` |
+| `GET` | `/ready` | Nenhuma | Status de prontidão | `200`, `503` |
+| `POST` | `/sign` | `SignRequest` | `SignResponse` ou `ErrorResponse` | `200`, `400`, `500` |
+| `POST` | `/validate` | `ValidateRequest` | `ValidateResponse` ou `ErrorResponse` | `200`, `400`, `500` |
+| `POST` ou `GET` | `/shutdown` | Nenhuma ou token local, se definido | Confirmação | `200`, `404`, `500` |
+
+### 12.4.1 Exemplo conceitual de `SignRequest`
 
 ```json
 {
-  "document": "documento.json",
-  "certificate": "certificado.pem",
-  "parameters": {
-    "algorithm": "simulado"
-  }
+  "documentPath": "documento.xml",
+  "profile": "padrao",
+  "parameters": {}
 }
 ```
 
-Exemplo conceitual de resposta:
+### 12.4.2 Exemplo conceitual de `SignResponse`
 
 ```json
 {
-  "success": true,
-  "operation": "sign",
-  "signature": "assinatura-simulada",
+  "signatureId": "assinatura-simulada-001",
+  "status": "success",
+  "signatureValue": "SIMULATED_SIGNATURE_VALUE",
+  "algorithm": "SIMULATED",
+  "createdAt": "2026-06-07T13:00:00Z",
   "message": "Assinatura simulada criada com sucesso."
 }
 ```
 
-#### 12.3.2 `POST /validate`
-
-| Item | Descrição |
-|---|---|
-| Finalidade | Validar assinatura simulada. |
-| Método | POST |
-| Entrada | JSON compatível com `ValidateRequest`. |
-| Saída | JSON compatível com `ValidateResponse`. |
-| Sucesso | HTTP 200. |
-| Erro de parâmetro | HTTP 400. |
-| Erro interno | HTTP 500. |
-
-Exemplo conceitual de requisição:
+### 12.4.3 Exemplo conceitual de `ErrorResponse`
 
 ```json
 {
-  "document": "documento.json",
-  "signature": "assinatura-simulada"
+  "errorCode": "INVALID_PARAMETER",
+  "message": "Parâmetro inválido.",
+  "details": [
+    {
+      "field": "documentPath",
+      "message": "O caminho do documento não pode ser vazio."
+    }
+  ],
+  "suggestion": "Informe um caminho de arquivo válido e tente novamente.",
+  "timestamp": "2026-06-07T13:00:00Z"
 }
 ```
 
-Exemplo conceitual de resposta:
+## 12.5 Endpoints HTTP do Simulador do HubSaúde
 
-```json
-{
-  "success": true,
-  "operation": "validate",
-  "valid": true,
-  "message": "Assinatura simulada considerada válida."
-}
-```
-
-#### 12.3.3 `GET /health`
-
-| Item | Descrição |
-|---|---|
-| Finalidade | Verificar se o `assinador.jar` está ativo em modo servidor. |
-| Método | GET |
-| Entrada | Nenhuma. |
-| Saída | Status simples de saúde da aplicação. |
-| Uso | Health check pelo CLI antes de reutilizar instância ativa. |
-
-### 12.4 Endpoints do Simulador do HubSaúde
-
-| Método | Endpoint | Finalidade | Uso pelo CLI |
+| Método | Endpoint | Finalidade | Status esperados |
 |---|---|---|---|
-| GET | `/api/info` | Consultar informações e status do simulador. | Usado por `simulador status`. |
-| POST ou GET | `/shutdown` | Solicitar encerramento do simulador, conforme implementação disponível. | Usado por `simulador stop`. |
-
-### 12.5 Interface com PKCS#11
-
-| Item | Descrição |
-|---|---|
-| Finalidade | Permitir interação com token, smart card ou simulador criptográfico. |
-| Implementação | `PKCS11Adapter`. |
-| Tecnologia | Java `SunPKCS11` provider ou equivalente. |
-| Cenários tratados | Dispositivo disponível, dispositivo ausente, biblioteca ausente, configuração inválida. |
-| Observação | A assinatura continua simulada no escopo atual, salvo evolução futura. |
+| `GET` | `/api/info` | Consultar informações e status do simulador. | `200`, `503` |
+| `POST` ou `GET` | `/shutdown` | Encerrar o simulador. | `200`, `404`, `500` |
+| `GET` | `/health` ou equivalente | Verificar se o processo está vivo, se disponível. | `200`, `503` |
+| `GET` | `/ready` ou equivalente | Verificar se está pronto para requisições, se disponível. | `200`, `503` |
 
 ---
 
-## 13. Fluxos principais do sistema
+# 13. Fluxos principais do sistema
 
-### 13.1 Fluxo de criação de assinatura em modo local
+## 13.1 Fluxo de criação de assinatura em modo servidor
+
+```mermaid
+sequenceDiagram
+    actor Usuario
+    participant CLI as assinatura CLI
+    participant Manager as SignerServerManager
+    participant Jar as assinador.jar HTTP
+    participant Service as SignatureService
+
+    Usuario->>CLI: assinatura sign [parâmetros]
+    CLI->>Manager: EnsureRunning(porta)
+    Manager->>Jar: GET /health ou /ready
+    alt servidor ativo e pronto
+        Manager-->>CLI: instância reutilizada
+    else servidor ausente
+        Manager->>Jar: iniciar processo java -jar server
+        Manager->>Jar: aguardar readiness
+        Manager-->>CLI: instância iniciada
+    end
+    CLI->>Jar: POST /sign
+    Jar->>Service: sign(SignRequest)
+    Service-->>Jar: SignResponse
+    Jar-->>CLI: resposta HTTP
+    CLI-->>Usuario: resultado formatado
+```
+
+## 13.2 Fluxo de criação de assinatura em modo local
 
 ```text
 1. Usuário executa `assinatura sign --local ...`.
-2. `SignCommandHandler` recebe os parâmetros.
-3. `CliArgumentValidator` valida parâmetros básicos.
-4. `SignUseCase` solicita Java ao `JavaRuntimeResolver`.
-5. `JavaRuntimeResolver` localiza ou provisiona JDK/JRE.
-6. `LocalJarInvoker` monta comando `java -jar assinador.jar sign ...`.
-7. `assinador.jar` recebe os argumentos pelo `CliAdapter`.
-8. `ParameterValidator` valida parâmetros.
-9. `FakeSignatureService` gera assinatura simulada.
-10. `assinador.jar` retorna resposta.
-11. `OutputFormatter` apresenta resultado ao usuário.
+2. CLI interpreta comando e flags.
+3. CLI verifica Java/JDK/JRE disponível ou provisionado.
+4. CLI localiza `assinador.jar`.
+5. CLI monta lista de argumentos preservando espaços, acentos e aspas.
+6. CLI executa subprocesso `java -jar assinador.jar sign ...`.
+7. `assinador.jar` valida parâmetros.
+8. `assinador.jar` retorna assinatura simulada ou erro.
+9. CLI captura stdout, stderr e exit code.
+10. CLI formata o resultado ou erro para o usuário.
 ```
 
-### 13.2 Fluxo de criação de assinatura em modo servidor
-
-```text
-1. Usuário executa `assinatura sign ...`.
-2. CLI verifica se existe servidor `assinador.jar` registrado.
-3. `HealthChecker` confirma se o servidor responde.
-4. Se servidor estiver ativo, `AssinadorHttpClient` envia POST `/sign`.
-5. Se servidor não estiver ativo, o CLI pode iniciar o servidor ou usar fallback local, conforme configuração.
-6. `SignatureController` recebe a requisição.
-7. `ParameterValidator` valida parâmetros.
-8. `FakeSignatureService` gera assinatura simulada.
-9. `SignatureController` retorna JSON de sucesso.
-10. CLI formata e apresenta a resposta.
-```
-
-### 13.3 Fluxo de validação de assinatura
+## 13.3 Fluxo de validação de assinatura
 
 ```text
 1. Usuário executa `assinatura validate ...`.
-2. CLI valida argumentos básicos.
-3. CLI escolhe modo local ou HTTP.
-4. `assinador.jar` recebe a requisição.
-5. `ParameterValidator` valida documento e assinatura.
-6. `FakeSignatureService` aplica critério predeterminado de validação simulada.
-7. Resposta indica assinatura válida ou inválida.
-8. CLI apresenta resultado legível ao usuário.
+2. CLI decide entre modo servidor e modo local.
+3. CLI envia parâmetros ao `assinador.jar`.
+4. `assinador.jar` valida parâmetros de validação.
+5. `assinador.jar` retorna resultado simulado: válido ou inválido.
+6. CLI apresenta resultado legível ao usuário.
 ```
 
-### 13.4 Fluxo de inicialização do `assinador.jar` em modo servidor
+## 13.4 Fluxo de inicialização do `assinador.jar` em modo servidor
 
 ```text
-1. Usuário executa operação que requer servidor ou comando específico de inicialização.
-2. CLI verifica porta padrão ou porta informada.
-3. CLI verifica se já existe instância registrada.
-4. Se houver registro, executa health check.
-5. Se não houver instância ativa, resolve Java compatível.
-6. CLI inicia `assinador.jar` em segundo plano.
-7. `ProcessRegistry` salva PID, porta e endpoint de saúde.
-8. CLI informa ao usuário que o servidor foi iniciado.
+1. CLI recebe operação que exige modo servidor.
+2. CLI consulta registro local em `~/.hubsaude/`.
+3. CLI verifica se há PID e porta registrados.
+4. CLI executa health check real no endpoint do servidor.
+5. Se a instância estiver ativa e pronta, reutiliza.
+6. Se não houver instância válida, verifica se a porta está disponível.
+7. CLI garante Java/JDK/JRE compatível.
+8. CLI inicia `assinador.jar` como processo em segundo plano.
+9. CLI aguarda readiness com timeout.
+10. CLI grava PID, porta, versão e status no registro local.
 ```
 
-### 13.5 Fluxo de parada do `assinador.jar`
+## 13.5 Fluxo de parada do `assinador.jar`
 
 ```text
-1. Usuário executa `assinatura stop`.
-2. CLI consulta registro local pela porta.
-3. CLI verifica se o processo ainda está ativo.
-4. CLI tenta encerrar o processo de forma controlada.
-5. Registro local é atualizado ou removido.
-6. Usuário recebe confirmação.
+1. Usuário executa `assinatura stop --port <porta>`.
+2. CLI consulta registro local.
+3. CLI executa health check para confirmar instância.
+4. CLI solicita shutdown pelo endpoint definido.
+5. CLI aguarda encerramento com timeout.
+6. CLI remove ou atualiza metadados locais.
+7. CLI informa sucesso ou erro claro ao usuário.
 ```
 
-### 13.6 Fluxo de início do Simulador do HubSaúde
+## 13.6 Fluxo de início do Simulador do HubSaúde
 
 ```text
 1. Usuário executa `simulador start`.
-2. CLI verifica disponibilidade da porta 8443 ou porta informada.
-3. CLI verifica se `simulador.jar` está em cache local.
-4. Se não estiver, `ReleaseResolver` consulta release ou `release.json`.
-5. `ArtifactDownloader` baixa o `simulador.jar`.
-6. `ChecksumVerifier` valida integridade do arquivo.
-7. `JavaRuntimeResolver` localiza ou baixa JDK/JRE compatível.
-8. `ProcessManager` inicia o simulador.
-9. `ProcessRegistry` registra PID e porta.
-10. `SimulatorHttpClient` consulta `/api/info`.
-11. CLI exibe status ao usuário.
+2. CLI verifica porta padrão 8443 ou porta informada.
+3. CLI verifica se `simulador.jar` está disponível localmente.
+4. Se não estiver, consulta release metadata e baixa o artefato.
+5. CLI verifica checksum do artefato quando disponível.
+6. CLI garante Java/JDK/JRE compatível.
+7. CLI inicia o processo do simulador.
+8. CLI aguarda readiness por `/api/info`, `/ready` ou endpoint equivalente.
+9. CLI grava PID, porta, versão e status.
+10. CLI informa que o simulador foi iniciado com sucesso.
 ```
 
-### 13.7 Fluxo de parada do Simulador
+## 13.7 Fluxo de status do Simulador
 
 ```text
-1. Usuário executa `simulador stop`.
-2. CLI consulta registro local.
-3. CLI envia requisição ao endpoint `/shutdown`, conforme disponível.
-4. CLI aguarda encerramento do processo.
-5. Registro local é atualizado.
-6. Usuário recebe confirmação.
+1. Usuário executa `simulador status`.
+2. CLI consulta metadados locais.
+3. CLI tenta consultar `/api/info` na porta registrada ou padrão.
+4. Se o serviço responder, exibe status e readiness.
+5. Se não responder, informa que não está em execução ou está indisponível.
+6. Se houver metadado obsoleto, marca como inativo ou remove o registro.
 ```
 
-### 13.8 Fluxo de provisionamento de JDK/JRE
+## 13.8 Fluxo de provisionamento de JDK/JRE
 
 ```text
-1. Alguma operação exige execução Java.
-2. `JavaRuntimeResolver` procura Java em `~/.hubsaude/`.
-3. Se não encontrar, procura Java no PATH.
-4. Se encontrar, valida compatibilidade com Java 21.
-5. Se não encontrar versão compatível, baixa JDK/JRE adequado.
-6. Arquivo baixado é armazenado em diretório gerenciado.
-7. Caminho do Java é retornado ao invocador.
+1. Componente `JdkProvider` verifica Java no PATH.
+2. Se Java compatível existir, retorna `JdkInfo` válido.
+3. Se não existir, verifica diretório gerenciado `~/.hubsaude/jdk/`.
+4. Se houver JDK/JRE compatível no diretório gerenciado, reutiliza.
+5. Se não houver, identifica plataforma do usuário.
+6. Baixa JDK/JRE compatível de fonte configurada.
+7. Verifica integridade quando possível.
+8. Extrai e registra caminho local.
+9. Retorna caminho do executável `java`.
 ```
 
-### 13.9 Fluxo de publicação de release
+## 13.9 Fluxo de release
 
 ```text
-1. Desenvolvedor cria tag SemVer, como `v0.1.0`.
-2. GitHub Actions executa workflow de release.
-3. Pipeline compila binários para Windows, Linux e macOS.
-4. Pipeline gera checksums SHA256.
-5. Pipeline assina artefatos com Cosign.
-6. Pipeline publica binários, checksums, `.sig` e `.pem` no GitHub Releases.
+1. Desenvolvedor cria tag SemVer, por exemplo `v0.1.0`.
+2. GitHub Actions executa testes em Windows, Linux e macOS.
+3. Workflow gera binários dos CLIs para plataformas-alvo.
+4. Workflow gera checksums SHA256.
+5. Workflow assina artefatos com Cosign/Sigstore.
+6. Workflow publica binários, checksums, `.sig` e `.pem` em GitHub Releases.
+7. Usuário baixa e verifica o artefato antes de executar, quando desejar.
 ```
 
 ---
 
-## 14. Regras de negócio detalhadas
+# 14. Regras de negócio detalhadas
 
-| ID | Regra | Detalhamento |
+| ID | Regra detalhada |
+|---|---|
+| RBD-01 | O Sistema Runner deve ocultar do usuário a complexidade de execução de aplicações Java. |
+| RBD-02 | O usuário deve interagir com o sistema por comandos de terminal, não por interface gráfica. |
+| RBD-03 | O CLI `assinatura` deve permitir criar e validar assinaturas simuladas. |
+| RBD-04 | A assinatura gerada pelo sistema é simulada e não possui validade criptográfica real. |
+| RBD-05 | A validação de assinatura é simulada e não deve ser interpretada como validação criptográfica real. |
+| RBD-06 | O `assinador.jar` deve ser a autoridade única para validação de parâmetros de assinatura e validação. |
+| RBD-07 | O CLI pode validar presença básica de parâmetros para melhorar usabilidade, mas não deve duplicar regras complexas do `assinador.jar`. |
+| RBD-08 | O modo servidor deve ser preferido quando o usuário não solicitar modo local. |
+| RBD-09 | O modo local deve ser utilizado apenas quando explicitamente ativado por flag ou configuração. |
+| RBD-10 | O sistema deve reutilizar uma instância ativa do `assinador.jar` quando health check/readiness indicar que ela está válida. |
+| RBD-11 | Porta ocupada não significa instância válida; deve haver health check real. |
+| RBD-12 | O `assinador.jar` em modo servidor deve poder ser encerrado pela porta padrão ou por porta indicada. |
+| RBD-13 | O timeout de inatividade deve reiniciar a contagem a cada requisição válida recebida. |
+| RBD-14 | O Simulador do HubSaúde deve ser iniciado, parado e monitorado pelo CLI `simulador`. |
+| RBD-15 | A porta padrão do Simulador deve ser 8443, salvo configuração permitida. |
+| RBD-16 | O CLI `simulador` deve confirmar readiness antes de informar que o simulador está pronto. |
+| RBD-17 | O sistema não deve baixar JDK/JRE, `simulador.jar` ou outro artefato se uma versão válida já estiver disponível localmente. |
+| RBD-18 | Artefatos baixados devem ter integridade verificada quando houver checksum disponível. |
+| RBD-19 | Artefatos publicados em release devem usar SemVer. |
+| RBD-20 | Artefatos publicados em release devem possuir checksum SHA256. |
+| RBD-21 | Artefatos publicados em release devem ser assinados com Cosign/Sigstore. |
+| RBD-22 | Erros devem explicar o que ocorreu, por que ocorreu e como corrigir, quando possível. |
+| RBD-23 | Resultados esperados devem ser enviados para `stdout`; diagnósticos e erros devem ser enviados para `stderr`. |
+| RBD-24 | Códigos de saída devem diferenciar sucesso, erro do usuário e erro do sistema. |
+| RBD-25 | O projeto deve manter rastreabilidade entre requisitos, histórias, issues, PRs, commits, código e testes. |
+
+---
+
+# 15. Tratamento de erros
+
+## 15.1 Modelo geral de erro
+
+O sistema deve adotar um modelo estruturado de erro. Em Go, recomenda-se a struct `AppError`. Em Java, recomenda-se `ErrorResponse` e exceções específicas.
+
+### 15.1.1 Estrutura sugerida de `AppError`
+
+| Campo | Descrição |
+|---|---|
+| `kind` | Categoria do erro: `USER_ERROR`, `SYSTEM_ERROR`, `INTEGRATION_ERROR`, `CONFIG_ERROR`, `VALIDATION_ERROR`. |
+| `code` | Código estável do erro, como `JAR_NOT_FOUND` ou `PORT_IN_USE`. |
+| `message` | Mensagem clara para o usuário. |
+| `cause` | Erro técnico original, para diagnóstico interno. |
+| `suggestion` | Orientação de correção. |
+| `exitCode` | Código de saída correspondente. |
+
+## 15.2 Códigos de saída sugeridos
+
+| Código | Significado |
+|---:|---|
+| `0` | Sucesso. |
+| `1` | Erro geral não classificado. |
+| `2` | Erro de uso ou parâmetro inválido informado pelo usuário. |
+| `3` | Dependência ausente, como JDK/JRE ou JAR. |
+| `4` | Erro de integração local ou HTTP. |
+| `5` | Erro de porta, processo ou ciclo de vida. |
+| `6` | Erro de download ou verificação de artefato. |
+| `7` | Erro de dispositivo criptográfico/PKCS#11. |
+| `8` | Timeout. |
+
+## 15.3 Categorias de erro
+
+| Categoria | Exemplos | Tratamento esperado |
 |---|---|---|
-| RND-001 | O sistema deve simular assinatura digital | A criação de assinatura não deve executar operação criptográfica real. O retorno deve ser uma assinatura simulada e identificável como tal. |
-| RND-002 | O sistema deve simular validação de assinatura | A validação deve retornar resultado predeterminado baseado em critérios simples definidos no serviço de simulação. |
-| RND-003 | Parâmetros obrigatórios devem ser validados | Operações sem parâmetros obrigatórios devem ser rejeitadas antes do processamento. |
-| RND-004 | Erros devem indicar causa e correção | Mensagens devem indicar parâmetro inválido, motivo e, quando possível, sugestão de uso. |
-| RND-005 | O modo servidor deve ser preferido quando disponível | Quando houver instância ativa do `assinador.jar`, o CLI deve reutilizá-la, salvo se o usuário solicitar `--local`. |
-| RND-006 | O modo local deve estar disponível | O usuário deve poder forçar execução local via `--local` ou fallback equivalente. |
-| RND-007 | O sistema não deve criar processos duplicados desnecessariamente | Antes de iniciar novo servidor, o CLI deve verificar registro local e health check. |
-| RND-008 | Porta ocupada deve bloquear inicialização | O sistema não deve iniciar assinador ou simulador em porta já ocupada sem avisar o usuário. |
-| RND-009 | A porta padrão do Simulador é 8443 | O comando `simulador start` deve usar 8443 quando nenhuma porta for informada. |
-| RND-010 | O JDK/JRE deve ser reutilizado | Após download, o Java deve ser armazenado para evitar novo download em execuções futuras. |
-| RND-011 | O `simulador.jar` não deve ser baixado repetidamente | Se a versão local for a mais recente, o sistema deve reutilizá-la. |
-| RND-012 | Downloads devem ser verificados | Artefatos com checksum disponível devem ser verificados antes do uso. |
-| RND-013 | Registros de processo devem ser atualizados | Ao iniciar ou parar processos, o sistema deve atualizar `~/.hubsaude/processos/`. |
-| RND-014 | Artefatos de release devem ser verificáveis | Binários publicados devem possuir SHA256 e assinatura Cosign. |
-| RND-015 | O usuário não deve precisar conhecer `java -jar` | O CLI deve encapsular os comandos Java. |
-| RND-016 | Ausência de PKCS#11 deve ser tratada claramente | Falhas envolvendo token, smart card ou biblioteca PKCS#11 devem gerar erro compreensível. |
-| RND-017 | Assinaturas simuladas não devem ser persistidas | Resultados de assinatura devem ser exibidos, mas não armazenados permanentemente pelo Runner. |
-| RND-018 | A documentação deve deixar claro o caráter simulado | O sistema não deve ser apresentado como solução de assinatura digital juridicamente válida. |
+| Erro de validação | Parâmetro ausente, formato inválido, campo vazio. | Retornar mensagem clara com campo, motivo e correção. |
+| Erro de dependência | Java ausente, `assinador.jar` ausente, `simulador.jar` ausente. | Tentar provisionar quando aplicável; caso falhe, orientar usuário. |
+| Erro de processo | PID inexistente, processo morto, falha ao iniciar. | Atualizar registro local e informar estado real. |
+| Erro de porta | Porta ocupada, porta inválida, permissão negada. | Verificar health/readiness; não assumir instância válida. |
+| Erro HTTP | Timeout, conexão recusada, resposta malformada. | Retornar erro estruturado e código de saída adequado. |
+| Erro de download | URL inválida, rede indisponível, checksum divergente. | Não executar artefato inválido; orientar correção. |
+| Erro PKCS#11 | Token ausente, biblioteca não encontrada, slot inválido. | Mensagem clara sem expor dados sensíveis. |
+| Erro interno | Exceção não esperada. | Registrar log técnico e exibir mensagem controlada. |
+
+## 15.4 Exemplos de mensagens de erro
+
+### 15.4.1 Parâmetro inválido
+
+```text
+Erro: parâmetro inválido.
+
+Parâmetro: documentPath
+Motivo: o caminho do documento não pode ser vazio.
+Como resolver: informe um arquivo válido e tente novamente.
+```
+
+### 15.4.2 Porta ocupada por outro processo
+
+```text
+Erro: não foi possível iniciar o servidor.
+
+Motivo: a porta 8443 está ocupada por outro processo e não respondeu ao health check esperado.
+Como resolver: encerre o processo que utiliza a porta ou informe outra porta.
+```
+
+### 15.4.3 Java ausente
+
+```text
+Erro: Java compatível não encontrado.
+
+Motivo: o sistema não encontrou JDK/JRE 21 no PATH nem no diretório gerenciado.
+Como resolver: permita o download automático ou instale uma versão compatível do Java.
+```
+
+## 15.5 Diretrizes de implementação
+
+- Não capturar erros genéricos e descartá-los silenciosamente.
+- Não usar `catch (Throwable)` de forma ampla no Java sem tratamento específico.
+- Não imprimir stack trace diretamente para o usuário em modo normal.
+- Registrar detalhes técnicos em log quando necessário.
+- Exibir mensagens orientadas à ação.
+- Manter `stdout` para resultado e `stderr` para diagnóstico.
+- Cobrir cenários negativos com testes automatizados.
 
 ---
 
-## 15. Tratamento de erros
+# 16. Projeto de segurança
 
-O tratamento de erros deve ser padronizado, com mensagens claras, orientativas e adequadas para terminal. A implementação deve evitar stack traces para o usuário final, exceto em modo de depuração.
+## 16.1 Segurança da execução local
 
-### 15.1 Estrutura padronizada de erro
+A execução local do `assinador.jar` deve ser feita por API de subprocesso, passando argumentos como lista. O projeto deve evitar concatenação de comandos em uma string executada por shell, pois isso pode quebrar argumentos com espaços, acentos e aspas, além de aumentar risco de execução indevida.
 
-#### Em CLI
+## 16.2 Segurança da cadeia de suprimentos
 
-```text
-Erro: <descrição resumida>
-Motivo: <causa identificada>
-Orientação: <como o usuário pode corrigir>
-Código: <código opcional do erro>
-```
+Todos os artefatos publicados em release devem possuir:
 
-#### Em HTTP
+- checksum SHA256;
+- assinatura Cosign (`.sig`);
+- certificado Cosign (`.pem`);
+- versão SemVer;
+- nome padronizado com sistema operacional e arquitetura.
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_PARAMETER",
-    "message": "Parâmetro obrigatório ausente: documento",
-    "details": "Informe o parâmetro documento ou consulte a ajuda do comando."
-  }
-}
-```
+O processo deve ser automatizado no CI/CD para reduzir erro manual.
 
-### 15.2 Códigos de erro sugeridos
+## 16.3 Segurança dos downloads
 
-| Código | Situação |
-|---|---|
-| `INVALID_PARAMETER` | Parâmetro ausente, vazio ou em formato inválido. |
-| `JAVA_NOT_FOUND` | Java compatível não encontrado. |
-| `JAVA_DOWNLOAD_FAILED` | Falha ao baixar JDK/JRE. |
-| `JAR_NOT_FOUND` | Arquivo `.jar` não encontrado. |
-| `JAR_EXECUTION_FAILED` | Falha ao executar `java -jar`. |
-| `HTTP_CONNECTION_FAILED` | Falha de conexão com servidor local. |
-| `HTTP_INVALID_RESPONSE` | Resposta HTTP inválida ou inesperada. |
-| `PORT_UNAVAILABLE` | Porta ocupada ou inválida. |
-| `PROCESS_NOT_FOUND` | Processo não encontrado ou já encerrado. |
-| `PROCESS_REGISTRY_STALE` | Registro de processo desatualizado. |
-| `DOWNLOAD_FAILED` | Falha ao baixar artefato remoto. |
-| `CHECKSUM_MISMATCH` | Checksum do arquivo baixado não confere. |
-| `PKCS11_DEVICE_NOT_FOUND` | Token ou smart card não encontrado. |
-| `PKCS11_CONFIGURATION_ERROR` | Configuração PKCS#11 inválida. |
-| `INTERNAL_ERROR` | Erro inesperado interno. |
+O sistema deve:
 
-### 15.3 Tratamento por camada
+- baixar artefatos apenas de fontes previstas ou explicitamente indicadas;
+- verificar checksum quando disponível;
+- recusar execução de artefato com checksum divergente;
+- reaproveitar cache local quando válido;
+- informar falha de rede ou verificação de forma clara.
 
-| Camada | Responsabilidade no tratamento de erro |
-|---|---|
-| CLI | Capturar erro, formatar mensagem e retornar código de saída apropriado. |
-| Use case | Identificar falhas de fluxo e propagar erros de domínio. |
-| Serviços de infraestrutura | Encapsular erros técnicos, como rede, processo, arquivo e download. |
-| `assinador.jar` | Validar parâmetros e retornar erro estruturado. |
-| Controladores HTTP | Converter exceções em HTTP status adequado. |
-| Repositórios locais | Tratar falhas de leitura/escrita e permissões. |
+## 16.4 Segurança dos metadados locais
 
-### 15.4 Exemplos de mensagens
+O diretório `~/.hubsaude/` deve armazenar apenas dados operacionais. O sistema não deve armazenar senhas, tokens, certificados privados ou segredos. Caso uma funcionalidade futura exija dado sensível, deve haver ADR específica para permissões, criptografia local e descarte seguro.
 
-#### Parâmetro ausente
+## 16.5 Segurança de logs
 
-```text
-Erro: parâmetro obrigatório ausente.
-Motivo: o parâmetro 'documento' não foi informado.
-Orientação: execute 'assinatura sign --help' para ver os parâmetros necessários.
-```
+Logs devem apoiar diagnóstico, mas não devem vazar dados sensíveis. Recomenda-se:
 
-#### Porta ocupada
+- níveis de log (`error`, `warn`, `info`, `debug`);
+- modo `--verbose` para diagnóstico ampliado;
+- modo `--quiet` para reduzir saída;
+- mascaramento de valores sensíveis caso existam;
+- logs em arquivo somente quando necessário e documentado.
 
-```text
-Erro: não foi possível iniciar o simulador.
-Motivo: a porta 8443 já está em uso.
-Orientação: finalize o processo atual ou informe outra porta com '--port'.
-```
+## 16.6 Segurança PKCS#11
 
-#### Java ausente
+A integração PKCS#11 deve ficar restrita ao `assinador.jar`. O CLI não deve manipular diretamente token, smart card ou provider criptográfico. Falhas como token ausente, biblioteca nativa ausente ou slot inválido devem gerar erro claro.
 
-```text
-Erro: Java 21 não encontrado.
-Motivo: não foi localizado JDK/JRE compatível no sistema.
-Orientação: conecte-se à internet para permitir o provisionamento automático ou instale Java 21 manualmente.
-```
+## 16.7 Segurança dos endpoints locais
 
-#### Checksum inválido
+Como o servidor roda localmente, recomenda-se:
 
-```text
-Erro: o arquivo baixado não passou na verificação de integridade.
-Motivo: o checksum SHA256 calculado é diferente do esperado.
-Orientação: remova o arquivo em cache e tente novamente.
-```
+- vincular o servidor preferencialmente a `localhost`;
+- evitar exposição externa sem necessidade;
+- documentar porta padrão e porta customizada;
+- avaliar token local ou mecanismo equivalente para `/shutdown`, caso o servidor fique exposto além de localhost;
+- tratar `/shutdown` de forma controlada, evitando encerramento acidental por requisições externas.
 
 ---
 
-## 16. Projeto de segurança
+# 17. Projeto de persistência
 
-O projeto de segurança deve considerar a distribuição de artefatos, downloads, execução local, dispositivos criptográficos e armazenamento de dados operacionais.
+## 17.1 Estratégia geral
 
-### 16.1 Segurança dos artefatos de release
+O Sistema Runner não possui banco de dados de negócio. A persistência necessária é operacional e deve ocorrer no sistema de arquivos local, preferencialmente em `~/.hubsaude/`.
 
-Cada release deve conter:
+Essa persistência serve para:
 
-```text
-<artefato>
-<artefato>.sig
-<artefato>.pem
-checksums.txt
-```
+- armazenar JDK/JRE provisionado;
+- armazenar JARs baixados;
+- registrar versões e checksums;
+- registrar PID e porta de processos;
+- armazenar logs operacionais;
+- evitar downloads repetidos;
+- permitir comandos `status` e `stop`.
 
-Exemplo:
-
-```text
-assinatura-1.0.0-linux-amd64
-assinatura-1.0.0-linux-amd64.sig
-assinatura-1.0.0-linux-amd64.pem
-checksums.txt
-```
-
-A assinatura deve ser feita com Cosign, usando identidade OIDC e registro em transparency log, conforme definido nos documentos do projeto.
-
-### 16.2 Verificação de integridade
-
-O sistema deve utilizar SHA256 para verificar artefatos baixados quando houver checksum disponível.
-
-Fluxo:
-
-```text
-1. Baixar artefato.
-2. Calcular SHA256 local.
-3. Comparar com SHA256 esperado.
-4. Aceitar arquivo somente se os valores coincidirem.
-5. Em caso de divergência, remover ou isolar arquivo e informar erro.
-```
-
-### 16.3 Segurança no provisionamento de JDK/JRE
-
-- Preferir download por HTTPS.
-- Usar fontes confiáveis, como Eclipse Temurin / Adoptium.
-- Armazenar o runtime em diretório gerenciado.
-- Evitar baixar novamente versões já disponíveis.
-- Informar ao usuário quando um download for realizado.
-- Tratar falhas de rede e permissões.
-
-### 16.4 Segurança na execução de processos
-
-- Executar apenas caminhos de `.jar` conhecidos e gerenciados.
-- Não montar comandos por concatenação insegura de strings.
-- Usar APIs de execução de processo com lista de argumentos.
-- Validar caminhos antes da execução.
-- Registrar PID e porta para controle posterior.
-- Encerrar processos de forma controlada quando possível.
-
-### 16.5 Segurança no uso de PKCS#11
-
-- Isolar lógica PKCS#11 em `PKCS11Adapter`.
-- Não registrar PINs, senhas ou dados sensíveis em logs.
-- Tratar ausência de dispositivo com erro claro.
-- Permitir testes com SoftHSM2 ou equivalente.
-- Manter documentação clara sobre configuração necessária.
-- Reforçar que a operação de assinatura é simulada no escopo atual.
-
-### 16.6 Segurança de dados locais
-
-O Sistema Runner não deve persistir assinaturas digitais nem resultados sensíveis. A persistência local deve se limitar a:
-
-- JDK/JRE;
-- arquivos `.jar`;
-- metadados de versão;
-- registros de processo;
-- cache de releases;
-- logs operacionais, quando necessários.
-
-### 16.7 Limites de segurança
-
-O sistema não deve ser tratado como uma solução completa de assinatura digital real. Ele não substitui infraestrutura criptográfica de produção, autoridade certificadora ou solução de assinatura juridicamente válida. Essa limitação deve estar explícita na documentação de uso.
-
----
-
-## 17. Projeto de persistência
-
-O Sistema Runner não utiliza banco de dados tradicional. A persistência é local, baseada em arquivos no diretório `~/.hubsaude/`.
-
-### 17.1 Diretório local gerenciado
-
-Estrutura sugerida:
+## 17.2 Estrutura sugerida de persistência local
 
 ```text
 ~/.hubsaude/
-  jdk/
-    java-21/
-  jre/
-    java-21/
-  assinador/
-    assinador.jar
-    metadata.json
-  simulador/
-    simulador.jar
-    metadata.json
-  processos/
-    assinador-8080.json
-    simulador-8443.json
-  cache/
-    release.json
-    checksums.txt
-  logs/
-    runner.log
+├── jdk/
+│   └── <java-version>/
+├── artifacts/
+│   ├── assinador/
+│   │   └── assinador.jar
+│   └── simulador/
+│       └── simulador.jar
+├── metadata/
+│   ├── artifacts.json
+│   ├── jdk.json
+│   └── release-cache.json
+├── run/
+│   ├── assinador-<port>.json
+│   └── simulador-<port>.json
+└── logs/
+    ├── assinatura.log
+    ├── assinador.log
+    └── simulador.log
 ```
 
-### 17.2 Arquivos persistidos
+## 17.3 Arquivo de processo sugerido
 
-| Arquivo | Finalidade |
-|---|---|
-| `metadata.json` | Guardar versão, URL de origem e checksum de artefato. |
-| `assinador-<porta>.json` | Registrar processo do `assinador.jar`. |
-| `simulador-<porta>.json` | Registrar processo do `simulador.jar`. |
-| `release.json` | Cache de metadados remotos. |
-| `checksums.txt` | Hashes para verificação de integridade. |
-| `runner.log` | Log operacional, se implementado. |
-
-### 17.3 Exemplo de registro do assinador
+Exemplo: `~/.hubsaude/run/assinador-8080.json`
 
 ```json
 {
-  "application": "assinador",
-  "pid": 15342,
+  "name": "assinador",
+  "pid": 12345,
   "port": 8080,
-  "mode": "server",
-  "startedAt": "2026-05-07T20:30:00Z",
-  "healthEndpoint": "http://localhost:8080/health",
-  "status": "running"
+  "status": "running",
+  "version": "v0.1.0",
+  "startedAt": "2026-06-07T13:00:00Z",
+  "command": ["java", "-jar", "assinador.jar", "server", "--port", "8080"]
 }
 ```
 
-### 17.4 Exemplo de registro do simulador
+## 17.4 Arquivo de artefatos sugerido
+
+Exemplo: `~/.hubsaude/metadata/artifacts.json`
 
 ```json
 {
-  "application": "simulador",
-  "pid": 15890,
-  "port": 8443,
-  "mode": "server",
-  "startedAt": "2026-05-07T20:40:00Z",
-  "infoEndpoint": "http://localhost:8443/api/info",
-  "shutdownEndpoint": "http://localhost:8443/shutdown",
-  "status": "running"
+  "artifacts": [
+    {
+      "name": "simulador.jar",
+      "version": "1.0.0",
+      "url": "https://github.com/.../simulador.jar",
+      "sha256": "...",
+      "localPath": "~/.hubsaude/artifacts/simulador/simulador.jar",
+      "verified": true,
+      "downloadedAt": "2026-06-07T13:00:00Z"
+    }
+  ]
 }
 ```
 
-### 17.5 Políticas de persistência
+## 17.5 Regras de persistência
 
-| Política | Descrição |
+| ID | Regra |
 |---|---|
-| Reutilização | JDK/JRE e `.jar` baixados devem ser reutilizados. |
-| Atualização | Metadados devem ser atualizados após download ou mudança de versão. |
-| Limpeza | Registros de processo devem ser removidos ou marcados como inativos após parada. |
-| Validação | Registros de processo devem ser confirmados por health check. |
-| Segurança | Dados sensíveis não devem ser gravados. |
-| Portabilidade | Caminhos devem considerar diferenças entre Windows, Linux e macOS. |
+| RP-01 | Metadados devem ser salvos em formato simples, preferencialmente JSON. |
+| RP-02 | Escritas devem ser atômicas quando possível. |
+| RP-03 | Registros de processo devem ser validados por health check antes de serem considerados ativos. |
+| RP-04 | Metadados obsoletos devem ser removidos ou marcados como inativos. |
+| RP-05 | JDK/JRE e JARs já disponíveis e íntegros devem ser reutilizados. |
+| RP-06 | Logs devem ser opcionais ou controlados por configuração. |
+| RP-07 | Assinaturas simuladas e resultados de validação não devem ser armazenados como histórico de negócio. |
 
 ---
 
-## 18. Projeto de testes
+# 18. Projeto de testes
 
-O projeto de testes deve cobrir as funcionalidades principais, cenários de erro, integração entre CLIs e aplicações Java, endpoints HTTP, gerenciamento de processos e distribuição multiplataforma.
+## 18.1 Estratégia de testes
 
-### 18.1 Tipos de teste
+O projeto deve adotar uma pirâmide de testes saudável:
 
-| Tipo de teste | Objetivo |
+- muitos testes unitários;
+- alguns testes de integração;
+- poucos testes end-to-end, mas cobrindo os fluxos mais críticos;
+- testes de contrato para CLI ↔ JAR;
+- testes negativos como parte obrigatória.
+
+## 18.2 Testes unitários
+
+| Módulo | Exemplos de testes unitários |
 |---|---|
-| Teste unitário | Verificar funções e classes isoladas. |
-| Teste de integração | Verificar comunicação entre CLI, Java, HTTP, arquivos e processos. |
-| Teste de aceitação | Validar critérios de aceitação das histórias de usuário. |
-| Teste de contrato HTTP | Validar formato de requisições e respostas dos endpoints. |
-| Teste multiplataforma | Verificar builds e execução em Windows, Linux e macOS. |
-| Teste de segurança de artefatos | Verificar checksums e assinatura Cosign. |
-| Teste de erro | Confirmar mensagens claras em cenários de falha. |
+| `internal/cli` | Parsing de comandos, flags obrigatórias, help e version. |
+| `internal/signature` | Decisão de modo local/servidor, montagem de request. |
+| `internal/invoker` | Construção segura de argumentos, mapeamento de respostas. |
+| `internal/process` | Registro de PID/porta, interpretação de status, port checker. |
+| `internal/jdk` | Detecção de Java no PATH, seleção de JDK gerenciado. |
+| `internal/release` | Comparação de versões, validação de checksum. |
+| `internal/output` | Formatação de sucesso e erro. |
+| Java `ParameterValidator` | Campos obrigatórios, formatos inválidos, múltiplos erros. |
+| Java `FakeSignatureService` | Respostas simuladas de sucesso e falha. |
 
-### 18.2 Testes unitários sugeridos — Go
+## 18.3 Testes de integração
 
-| ID | Módulo | Caso de teste |
-|---|---|---|
-| TU-GO-001 | `CliArgumentValidator` | Deve rejeitar `sign` sem documento obrigatório. |
-| TU-GO-002 | `CliArgumentValidator` | Deve rejeitar `validate` sem assinatura. |
-| TU-GO-003 | `PortChecker` | Deve identificar porta disponível. |
-| TU-GO-004 | `PortChecker` | Deve identificar porta ocupada. |
-| TU-GO-005 | `ProcessRegistry` | Deve salvar e ler registro de processo. |
-| TU-GO-006 | `ProcessRegistry` | Deve remover registro após parada. |
-| TU-GO-007 | `ChecksumVerifier` | Deve aceitar arquivo com SHA256 correto. |
-| TU-GO-008 | `ChecksumVerifier` | Deve rejeitar arquivo com SHA256 divergente. |
-| TU-GO-009 | `ReleaseResolver` | Deve interpretar `release.json` válido. |
-| TU-GO-010 | `ErrorHandler` | Deve converter erro técnico em mensagem orientativa. |
-
-### 18.3 Testes unitários sugeridos — Java
-
-| ID | Módulo | Caso de teste |
-|---|---|---|
-| TU-JAVA-001 | `ParameterValidator` | Deve aceitar `SignRequest` válido. |
-| TU-JAVA-002 | `ParameterValidator` | Deve rejeitar `SignRequest` sem documento. |
-| TU-JAVA-003 | `ParameterValidator` | Deve aceitar `ValidateRequest` válido. |
-| TU-JAVA-004 | `ParameterValidator` | Deve rejeitar `ValidateRequest` sem assinatura. |
-| TU-JAVA-005 | `FakeSignatureService` | Deve retornar assinatura simulada para entrada válida. |
-| TU-JAVA-006 | `FakeSignatureService` | Deve retornar resultado simulado de validação. |
-| TU-JAVA-007 | `GlobalExceptionHandler` | Deve converter erro de parâmetro em resposta padronizada. |
-| TU-JAVA-008 | `PKCS11Adapter` | Deve retornar erro claro quando dispositivo não estiver disponível. |
-
-### 18.4 Testes de integração
-
-| ID | Caso de teste | Resultado esperado |
-|---|---|---|
-| TI-001 | CLI `assinatura` invoca `assinador.jar` via `java -jar`. | Resposta simulada é capturada e exibida. |
-| TI-002 | CLI `assinatura` envia `POST /sign`. | Endpoint retorna assinatura simulada. |
-| TI-003 | CLI `assinatura` envia `POST /validate`. | Endpoint retorna validação simulada. |
-| TI-004 | CLI detecta servidor registrado e ativo. | Reutiliza instância existente. |
-| TI-005 | CLI detecta registro desatualizado. | Não reutiliza processo inativo e informa adequadamente. |
-| TI-006 | CLI `simulador` inicia `simulador.jar`. | Processo é registrado com PID e porta. |
-| TI-007 | CLI `simulador` consulta `/api/info`. | Status é exibido ao usuário. |
-| TI-008 | CLI `simulador` chama `/shutdown`. | Processo é encerrado e registro atualizado. |
-| TI-009 | Provisionamento de JDK/JRE ausente. | Sistema baixa ou informa falha de forma controlada. |
-| TI-010 | Download de `simulador.jar` ausente. | Sistema baixa, verifica e armazena em cache. |
-
-### 18.5 Testes de aceitação por história
-
-| História | Testes associados |
+| Integração | Cenários |
 |---|---|
-| US-01 | TI-001, TI-002, TI-003, TI-004, TI-005 |
-| US-02 | TU-JAVA-001 a TU-JAVA-008, TI-002, TI-003 |
-| US-03 | TI-006, TI-007, TI-008, TI-010 |
-| US-04 | TI-009 |
-| US-05 | Testes de build, release, checksum e Cosign |
+| CLI `assinatura` → subprocesso → `assinador.jar` | Sign/validate local, argumentos com espaços, acentos e aspas. |
+| CLI `assinatura` → HTTP → `assinador.jar` | `/sign`, `/validate`, `/health`, `/ready`, `/shutdown`. |
+| CLI `simulador` → Simulador | `start`, `status`, `stop`, readiness e `/api/info`. |
+| CLI → JDK provider | Java presente, Java ausente, JDK gerenciado. |
+| CLI → release/download | Download bem-sucedido, checksum inválido, cache válido. |
+| `assinador.jar` → PKCS#11 | SoftHSM2 ou simulador equivalente disponível/indisponível. |
 
-### 18.6 Testes de CI/CD
+## 18.4 Testes de contrato
 
-| ID | Caso de teste | Resultado esperado |
+Os testes de contrato devem garantir que CLI e `assinador.jar` concordem sobre:
+
+- nomes de comandos;
+- parâmetros obrigatórios;
+- formato de payload HTTP;
+- formato de resposta de sucesso;
+- formato de resposta de erro;
+- códigos de saída;
+- separação entre `stdout` e `stderr`;
+- status HTTP esperados.
+
+## 18.5 Testes de aceitação
+
+| ID | Cenário | Resultado esperado |
 |---|---|---|
-| TCICD-001 | Build em push na branch principal. | Workflow executa com sucesso. |
-| TCICD-002 | Cross-compilation para Windows. | Binário Windows é gerado. |
-| TCICD-003 | Cross-compilation para Linux. | Binário Linux é gerado. |
-| TCICD-004 | Cross-compilation para macOS. | Binário macOS é gerado. |
-| TCICD-005 | Criação de tag SemVer. | Release é criada automaticamente. |
-| TCICD-006 | Geração de checksums. | Arquivo de checksums é publicado. |
-| TCICD-007 | Assinatura Cosign. | `.sig` e `.pem` são publicados para os artefatos. |
+| TA-01 | Executar `assinatura version`. | Versão atual é exibida. |
+| TA-02 | Executar `assinatura --help`. | Ajuda apresenta comandos e exemplos. |
+| TA-03 | Criar assinatura simulada em modo local. | Resposta de sucesso é exibida. |
+| TA-04 | Validar assinatura simulada em modo local. | Resultado simulado é exibido. |
+| TA-05 | Criar assinatura simulada em modo servidor. | Servidor é iniciado/reutilizado e resposta é exibida. |
+| TA-06 | Parar `assinador.jar` em modo servidor. | Processo é encerrado e registro atualizado. |
+| TA-07 | Iniciar Simulador do HubSaúde. | Processo inicia e readiness é confirmado. |
+| TA-08 | Consultar status do Simulador. | Status real é exibido. |
+| TA-09 | Parar Simulador. | Simulador é encerrado. |
+| TA-10 | Publicar release. | Binários, checksums, `.sig` e `.pem` são publicados. |
 
-### 18.7 Critérios mínimos de qualidade dos testes
+## 18.6 Testes negativos obrigatórios
 
-- Toda validação de parâmetro deve possuir teste de sucesso e teste de falha.
-- Todo comando CLI principal deve possuir teste de comportamento.
-- Todo endpoint HTTP deve possuir teste de contrato.
-- Todo fluxo que manipula processo deve testar cenário ativo e inativo.
-- Todo download com checksum deve testar sucesso e falha.
-- Os testes devem ser executáveis em pipeline de CI/CD.
-- As mensagens de erro devem ser verificadas nos cenários de falha mais importantes.
+| ID | Cenário negativo | Resultado esperado |
+|---|---|---|
+| TN-01 | `assinador.jar` ausente. | Erro claro e código de saída adequado. |
+| TN-02 | Java/JDK/JRE ausente. | Provisionamento automático ou erro orientativo. |
+| TN-03 | Porta ocupada por outro processo. | Falha clara; não reutilizar processo inválido. |
+| TN-04 | Servidor registrado, mas morto. | Registro local é invalidado ou atualizado. |
+| TN-05 | Timeout HTTP. | Erro de timeout com orientação. |
+| TN-06 | Resposta HTTP malformada. | Erro de integração, sem crash. |
+| TN-07 | Payload inválido. | Erro de validação estruturado. |
+| TN-08 | Checksum divergente. | Artefato não é executado. |
+| TN-09 | Falha no `/shutdown`. | Erro claro e estado final verificado. |
+| TN-10 | PKCS#11 indisponível. | Erro controlado e documentado. |
+
+## 18.7 Testes em CI/CD
+
+O pipeline deve executar:
+
+- `go vet ./...`;
+- `go test ./...`;
+- testes Java com Maven ou ferramenta equivalente;
+- build multiplataforma;
+- testes em runners Windows, Linux e macOS;
+- geração de artefatos;
+- geração de checksums;
+- assinatura Cosign em release.
 
 ---
 
-## 19. Rastreabilidade
+# 19. Rastreabilidade
 
-### 19.1 Rastreabilidade entre histórias, requisitos e módulos
+## 19.1 Matriz requisito → módulo → teste
 
-| História | Requisitos principais | Módulos principais |
+| Requisito/História | Módulos relacionados | Testes principais |
 |---|---|---|
-| US-01.1 | RF-001, RF-002 | `cmd/assinatura`, `commands`, `version` |
-| US-01.2 | RF-003, RF-004, RF-005 | `sign.go`, `validate.go`, `CliArgumentValidator` |
-| US-01.3 | RF-006, RF-007 | `LocalJarInvoker`, `JavaRuntimeResolver` |
-| US-01.4 | RF-008 | `OutputFormatter`, `ErrorHandler` |
-| US-01.5 | RF-009, RF-010 | `ProcessManager`, `ProcessRegistry` |
-| US-01.6 | RF-011, RF-012, RF-013 | `AssinadorHttpClient`, `HealthChecker` |
-| US-01.7 | RF-014 | `ProcessRegistry`, `HealthChecker` |
-| US-01.8 | RF-015 | `StopAssinadorUseCase`, `ProcessManager` |
-| US-01.9 | RF-016 | `ProcessManager`, mecanismo de timeout |
-| US-02.1 | RF-017, RF-018, RF-019 | `SignatureService`, `FakeSignatureService` |
-| US-02.2 | RF-020, RF-021 | `ParameterValidator`, `InvalidParameterException` |
-| US-02.3 | RF-022, RF-023 | `FakeSignatureService`, `ParameterValidator` |
-| US-02.4 | RF-024, RF-025, RF-026 | `SignatureController`, DTOs HTTP |
-| US-02.5 | RF-027, RF-028 | `PKCS11Adapter`, `Pkcs11Config` |
-| US-03.1 | RF-030, RF-031 | `StartSimulatorUseCase`, `PortChecker` |
-| US-03.2 | RF-032, RF-033, RF-034 | `StopSimulatorUseCase`, `StatusSimulatorUseCase`, `ProcessRegistry` |
-| US-03.3 | RF-029 | `cmd/simulador`, `simulador/commands` |
-| US-03.4 | RF-035, RF-036, RF-037, RF-038 | `ReleaseResolver`, `ArtifactDownloader`, `ChecksumVerifier`, `CacheManager` |
-| US-04.1 | RF-039, RF-040, RF-041 | `JavaDetector`, `JavaDownloader`, `JavaRuntimeResolver` |
-| US-05.1 | RF-042 | `.github/workflows/build.yml` |
-| US-05.2 | RF-043 | `.github/workflows/release.yml` |
-| US-05.3 | RF-044, RF-045, RF-046, RF-047 | `release.yml`, Cosign, checksum scripts |
+| US-01 / RF-01 a RF-09 | `cmd/assinatura`, `internal/cli`, `internal/signature`, `internal/output` | TA-01, TA-02, TA-03, TA-04 |
+| US-01.3 / RF-20 a RF-25 | `internal/invoker`, `internal/jdk`, `assinador/cli` | Integração local, TN-01, TN-02 |
+| US-01.5 a US-01.9 / RF-26 a RF-40 | `internal/process`, `internal/invoker`, `assinador/http`, `assinador/server` | TA-05, TA-06, TN-03 a TN-06 |
+| US-02 / RF-10 a RF-19 | `assinador/service`, `assinador/validation`, `assinador/pkcs11` | Unitários Java, contrato, TN-07, TN-10 |
+| US-03 / RF-41 a RF-50 | `cmd/simulador`, `internal/simulator`, `internal/process` | TA-07, TA-08, TA-09 |
+| US-03.4 / RF-55 a RF-58 | `internal/release`, `internal/storage`, `internal/simulator` | Download, cache, TN-08 |
+| US-04 / RF-51 a RF-54 | `internal/jdk`, `internal/storage` | Detecção/provisionamento Java, TN-02 |
+| US-05 / RF-59 a RF-67 | `.github/workflows`, `cmd/*` | Build/release, TA-10 |
+| RNF-01 | Workflows multiplataforma, código Go | Testes Windows/Linux/macOS |
+| RNF-03 / RNF-04 / RNF-05 | `internal/errors`, `internal/output`, Java `error` | Testes negativos |
+| RNF-07 | Release workflow, Cosign, checksums | Teste de release |
+| RNF-10 / RNF-12 | Organização modular, testes | Revisão, CI, cobertura |
+| RNF-16 | Issues, PRs, commits, testes | Auditoria de rastreabilidade |
 
-### 19.2 Rastreabilidade entre módulos e testes
+## 19.2 Rastreabilidade de processo
 
-| Módulo | Testes recomendados |
+Cada requisito ou história deve ser rastreável por meio da cadeia:
+
+```text
+Requisito / História de usuário
+    → Issue no GitHub
+        → Branch de implementação
+            → Pull Request
+                → Commits atômicos
+                    → Código alterado
+                        → Testes automatizados
+                            → Evidência no CI/CD
+```
+
+## 19.3 Convenções recomendadas
+
+- Issues devem citar o requisito ou história de usuário correspondente.
+- PRs devem referenciar issues relacionadas.
+- Commits devem ser atômicos e, preferencialmente, seguir Conventional Commits.
+- Testes devem referenciar, no nome ou descrição, o comportamento validado.
+- ADRs devem registrar decisões técnicas não óbvias.
+- Tags/releases devem seguir SemVer e estar associadas ao changelog.
+
+## 19.4 Exemplos de rastreabilidade
+
+| Item | Exemplo |
 |---|---|
-| `CliArgumentValidator` | TU-GO-001, TU-GO-002 |
-| `LocalJarInvoker` | TI-001 |
-| `AssinadorHttpClient` | TI-002, TI-003 |
-| `ProcessRegistry` | TU-GO-005, TU-GO-006, TI-004, TI-005 |
-| `PortChecker` | TU-GO-003, TU-GO-004 |
-| `JavaRuntimeResolver` | TI-009 |
-| `ReleaseResolver` | TU-GO-009, TI-010 |
-| `ArtifactDownloader` | TI-010 |
-| `ChecksumVerifier` | TU-GO-007, TU-GO-008 |
-| `StartSimulatorUseCase` | TI-006 |
-| `StatusSimulatorUseCase` | TI-007 |
-| `StopSimulatorUseCase` | TI-008 |
-| `ParameterValidator` | TU-JAVA-001 a TU-JAVA-004 |
-| `FakeSignatureService` | TU-JAVA-005, TU-JAVA-006 |
-| `SignatureController` | TI-002, TI-003 |
-| `PKCS11Adapter` | TU-JAVA-008 |
-| CI/CD | TCICD-001 a TCICD-007 |
-
-### 19.3 Rastreabilidade entre atributos de qualidade e decisões
-
-| Atributo | Decisões relacionadas |
-|---|---|
-| Segurança | SHA256, Cosign, OIDC, PKCS#11 isolado, não persistência de assinatura. |
-| Desempenho | Modo servidor HTTP, reutilização de instância ativa, cache de JDK/JRE e `.jar`. |
-| Manutenibilidade | Módulos separados, serviços reutilizáveis, DTOs, controladores e repositórios. |
-| Usabilidade | CLI com Cobra, `--help`, mensagens claras, saída formatada. |
-| Confiabilidade | Validação de parâmetros, health check, fallback local, tratamento de erros. |
-| Escalabilidade | Estrutura modular para novos comandos e novas aplicações Java. |
-| Portabilidade | Go, cross-compilation, GitHub Actions e suporte a Windows/Linux/macOS. |
+| História | `US-01.3 — Invocação do assinador.jar no modo local` |
+| Issue | `#12 Implementar invocação local do assinador.jar` |
+| Branch | `feature/us-01-3-local-invoker` |
+| PR | `PR #18 — Implementa LocalJarInvoker` |
+| Commit | `feat(invoker): add local jar invocation` |
+| Teste | `TestLocalJarInvokerPreservesArguments` |
+| Evidência | Workflow `build.yml` passando em Windows, Linux e macOS |
 
 ---
 
-## 20. Decisões técnicas principais
+# 20. Decisões técnicas principais
 
 | ID | Decisão técnica | Justificativa | Impacto |
 |---|---|---|---|
-| DT-001 | Desenvolver os CLIs em Go | Go facilita geração de binários multiplataforma e reduz dependências no ambiente do usuário. | Melhora portabilidade e distribuição. |
-| DT-002 | Usar Cobra para comandos CLI | Cobra oferece suporte a comandos, subcomandos, flags e help integrado. | Melhora organização e usabilidade. |
-| DT-003 | Desenvolver `assinador.jar` em Java 21 | Java 21 é restrição definida pelo projeto. | Padroniza execução Java. |
-| DT-004 | Separar CLI `assinatura` e CLI `simulador` | Cada CLI possui responsabilidade clara. | Reduz acoplamento e melhora clareza de uso. |
-| DT-005 | Suportar modo local e modo servidor | Modo local é simples; modo servidor reduz cold start em múltiplas operações. | Melhora flexibilidade e desempenho. |
-| DT-006 | Expor endpoints `/sign` e `/validate` | Padroniza integração HTTP com o `assinador.jar`. | Facilita testes e integração. |
-| DT-007 | Isolar validação de parâmetros no `assinador.jar` | A validação é essencial e deve ser reutilizada no modo local e HTTP. | Evita duplicação de regras. |
-| DT-008 | Usar `~/.hubsaude/` para armazenamento local | Centraliza cache, JDK/JRE, metadados e processos. | Melhora previsibilidade operacional. |
-| DT-009 | Registrar PID e porta dos processos | Permite status, reutilização e encerramento. | Melhora controle operacional. |
-| DT-010 | Confirmar processos por health check | Evita confiar em registros desatualizados. | Aumenta confiabilidade. |
-| DT-011 | Provisionar JDK/JRE automaticamente | Atende objetivo de ocultar instalação Java do usuário. | Melhora usabilidade. |
-| DT-012 | Baixar `simulador.jar` dinamicamente | Permite uso da versão mais recente sem download manual. | Melhora atualização e integração. |
-| DT-013 | Verificar checksum de downloads | Evita uso de arquivos corrompidos ou adulterados. | Aumenta segurança e confiabilidade. |
-| DT-014 | Assinar releases com Cosign | Garante autenticidade dos artefatos distribuídos. | Melhora segurança da cadeia de suprimentos. |
-| DT-015 | Não persistir assinaturas simuladas | O sistema não é repositório de assinaturas. | Reduz risco e mantém coerência com escopo. |
-| DT-016 | Isolar PKCS#11 em adaptador | Facilita testes e tratamento de variações de dispositivos. | Reduz acoplamento com tecnologia criptográfica. |
-| DT-017 | Automatizar builds com GitHub Actions | Garante geração consistente de binários. | Melhora qualidade de entrega. |
-| DT-018 | Usar SemVer em releases | Facilita controle de versões e comunicação com usuários. | Melhora rastreabilidade de entregas. |
+| DT-01 | Desenvolver os CLIs em Go 1.25. | Go facilita cross-compilation e possui boa biblioteca padrão para CLI, HTTP, subprocessos e arquivos. | Geração de binários portáveis; equipe precisa manter código Go idiomático. |
+| DT-02 | Desenvolver o `assinador.jar` em Java 21. | O projeto exige aplicação Java e compatibilidade com execução via JVM. | Necessidade de detectar/provisionar JDK/JRE 21. |
+| DT-03 | Usar Cobra para comandos dos CLIs. | Facilita comandos, subcomandos, flags, help e versionamento. | Padroniza a interface de linha de comando. |
+| DT-04 | Usar modo servidor como padrão para o `assinador.jar`. | Reduz cold start da JVM em múltiplas chamadas. | Exige ciclo de vida, health check, readiness e shutdown. |
+| DT-05 | Manter modo local por flag explícita. | Suporta execuções simples e scripts sem servidor persistente. | Exige contrato de subprocesso e tratamento de `stdout`, `stderr` e exit code. |
+| DT-06 | Centralizar validação no `assinador.jar`. | Evita duplicação de regra e preserva autoridade única de validação. | CLI deve repassar parâmetros e interpretar erros. |
+| DT-07 | Usar `~/.hubsaude/` como diretório local gerenciado. | Centraliza JDK/JRE, JARs, metadados, PID e logs. | Exige tratamento de permissões e compatibilidade multiplataforma. |
+| DT-08 | Usar health check e readiness. | Evita considerar porta ocupada como instância válida. | Exige endpoints e lógica de espera com timeout. |
+| DT-09 | Usar GitHub Actions para CI/CD. | Automatiza build, testes e release. | Garante reprodutibilidade e validação multiplataforma. |
+| DT-10 | Publicar binários em GitHub Releases. | Facilita distribuição para usuários finais. | Requer versionamento, nomes padronizados e artefatos completos. |
+| DT-11 | Gerar checksums SHA256 para artefatos. | Permite verificar integridade. | Deve ser automatizado no release. |
+| DT-12 | Assinar artefatos com Cosign/Sigstore. | Aumenta confiança e segurança da cadeia de suprimentos. | Requer `.sig`, `.pem`, OIDC e transparency log. |
+| DT-13 | Isolar PKCS#11 no Java. | O `assinador.jar` é responsável pelo domínio de assinatura e integração criptográfica. | CLI permanece simples e focado em orquestração. |
+| DT-14 | Não persistir assinaturas simuladas. | O escopo não prevê armazenamento de assinaturas. | Persistência se limita a dados operacionais. |
+| DT-15 | Registrar ADRs para decisões não óbvias. | Melhora rastreabilidade e manutenção futura. | Decisões como portas, cache, discovery e parser devem ser documentadas. |
+| DT-16 | Separar `stdout` e `stderr`. | Facilita uso em scripts e diagnóstico. | Exige disciplina na implementação de saídas. |
+| DT-17 | Usar SemVer para releases. | Torna versões compreensíveis e rastreáveis. | Tags devem seguir padrão `vX.Y.Z`. |
+| DT-18 | Não versionar artefatos gerados. | Evita poluição do repositório. | `.gitignore` deve ser adequado. |
 
 ---
 
-## Apêndice A — Exemplos conceituais de comandos
+# 21. Considerações finais
 
-### A.1 Exibir versão
+O projeto detalhado do Sistema Runner define uma solução modular, testável e alinhada com boas práticas de implementação e integração de software. O valor principal do sistema está na capacidade de integrar componentes de linha de comando, aplicações Java, processos locais, comunicação HTTP, provisionamento automático, distribuição multiplataforma, segurança de artefatos e testes automatizados.
 
-```bash
-assinatura version
-```
+O foco do projeto não é implementar criptografia real, mas sim construir uma solução de integração confiável, rastreável, reprodutível e de uso simples para o usuário final. A implementação deve preservar separação de responsabilidades, evitar duplicação de regras, tratar falhas de forma clara e manter o contrato entre CLI e `assinador.jar` documentado e testado.
 
-Saída esperada:
-
-```text
-assinatura version v0.1.0
-```
-
-### A.2 Criar assinatura simulada
-
-```bash
-assinatura sign --documento documento.json --certificado certificado.pem
-```
-
-Saída esperada:
-
-```text
-Operação: criação de assinatura
-Status: sucesso
-Mensagem: Assinatura simulada criada com sucesso.
-Assinatura: assinatura-simulada
-```
-
-### A.3 Validar assinatura simulada
-
-```bash
-assinatura validate --documento documento.json --assinatura assinatura.txt
-```
-
-Saída esperada:
-
-```text
-Operação: validação de assinatura
-Status: sucesso
-Resultado: assinatura válida
-```
-
-### A.4 Iniciar simulador
-
-```bash
-simulador start
-```
-
-Saída esperada:
-
-```text
-Verificando porta 8443...
-Porta disponível.
-Iniciando Simulador do HubSaúde...
-
-Status: em execução
-Porta: 8443
-PID: 15342
-```
-
-### A.5 Consultar status do simulador
-
-```bash
-simulador status
-```
-
-Saída esperada:
-
-```text
-Simulador do HubSaúde: em execução
-Porta: 8443
-PID: 15342
-```
-
-### A.6 Parar simulador
-
-```bash
-simulador stop
-```
-
-Saída esperada:
-
-```text
-Simulador do HubSaúde encerrado com sucesso.
-```
-
----
-
-## Apêndice B — Exemplos conceituais de estruturas JSON
-
-### B.1 `release.json`
-
-```json
-{
-  "jar": {
-    "url": "https://github.com/kyriosdata/assinador/releases/latest/download/assinador.jar",
-    "version": "1.2.0"
-  },
-  "jre": {
-    "windows_x64": "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse",
-    "linux_x64": "https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jre/hotspot/normal/eclipse",
-    "mac_x64": "https://api.adoptium.net/v3/binary/latest/21/ga/mac/x64/jre/hotspot/normal/eclipse"
-  }
-}
-```
-
-### B.2 Resposta de erro
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_PARAMETER",
-    "message": "Parâmetro obrigatório ausente: documento",
-    "details": "Informe o documento ou consulte a ajuda do comando."
-  }
-}
-```
-
-### B.3 Metadados de artefato
-
-```json
-{
-  "artifact": "simulador.jar",
-  "version": "1.2.0",
-  "url": "https://github.com/kyriosdata/assinador/releases/latest/download/simulador.jar",
-  "checksumSha256": "valor-sha256-esperado",
-  "downloadedAt": "2026-05-07T20:30:00Z"
-}
-```
-
----
-
-## Referências documentais utilizadas
-
-- Especificação original do Sistema Runner — Trabalho Prático.
-- Plano Revisado #2 do Sistema Runner.
-- Documento de Design do Sistema Runner com Modelo C4.
-- Especificação de Requisitos de Software — Sistema Runner.
-- Documento de Arquitetura de Software — Sistema Runner.
-- Diagramas de Contexto e Contêineres fornecidos nos arquivos do projeto.
-- Boas práticas de Engenharia de Software para projeto detalhado, modularidade, separação de responsabilidades, tratamento de erros, rastreabilidade, testes, segurança de artefatos e integração entre sistemas.
+**Fim do documento.**
