@@ -1,1 +1,1 @@
-{"operation":"VALIDATE","status":"SUCCESS","valid":true,"reason":"Assinatura simulada reconhecida pelo assinador.jar","validatedAt":"2026-06-09T18:19:30.392899973Z"}
+{"resourceType":"OperationOutcome","status":"SUCCESS","valid":true,"issue":[{"severity":"information","code":"VALIDATION.OK","diagnostics":"Assinatura simulada validada conforme estrutura JWS JSON Serialization e FHIR Signature"}]}

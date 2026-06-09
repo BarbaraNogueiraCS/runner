@@ -1,6 +1,7 @@
 package simulator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -16,15 +17,19 @@ import (
 	"github.com/kyriosdata/runner/internal/netutil"
 	"github.com/kyriosdata/runner/internal/paths"
 	"github.com/kyriosdata/runner/internal/process"
+	"github.com/kyriosdata/runner/internal/release"
 )
 
 const DefaultURL = "https://localhost:8443"
+const DefaultArtifact = "simulador"
 
 type Client struct {
-	BaseURL  string
-	Insecure bool
-	Timeout  time.Duration
-	JarPath  string
+	BaseURL     string
+	Insecure    bool
+	Timeout     time.Duration
+	JarPath     string
+	Artifact    string
+	ManifestURL string
 }
 
 func New(baseURL string, insecure bool, jar string) Client {
@@ -34,7 +39,11 @@ func New(baseURL string, insecure bool, jar string) Client {
 	if baseURL == "" {
 		baseURL = DefaultURL
 	}
-	return Client{BaseURL: strings.TrimRight(baseURL, "/"), Insecure: insecure, Timeout: 5 * time.Second, JarPath: jar}
+	artifact := os.Getenv("RUNNER_SIMULADOR_ARTIFACT")
+	if artifact == "" {
+		artifact = DefaultArtifact
+	}
+	return Client{BaseURL: strings.TrimRight(baseURL, "/"), Insecure: insecure, Timeout: 5 * time.Second, JarPath: jar, Artifact: artifact, ManifestURL: os.Getenv("RUNNER_RELEASE_JSON")}
 }
 
 func (c Client) Info() ([]byte, error) {
@@ -49,7 +58,7 @@ func (c Client) Status() (process.State, []byte, error) {
 		return process.State{}, nil, err
 	}
 	state, _ := process.Load("simulador")
-	if state.Name == "" {
+	if state.Name == "" || state.Port != c.port() {
 		state = process.State{Name: "simulador", URL: c.BaseURL, Port: c.port()}
 	}
 	return state, info, nil
@@ -70,13 +79,23 @@ func (c Client) Start() (process.State, bool, error) {
 	if port > 0 && !netutil.IsTCPPortFree(port) {
 		return process.State{}, false, fmt.Errorf("porta %d já está em uso por outro processo, mas %s/api/info não respondeu como Simulador HubSaúde", port, c.BaseURL)
 	}
-	if c.JarPath == "" {
-		return process.State{}, false, errors.New("simulador não está acessível e nenhum simulador.jar foi informado. Use --jar para iniciar um arquivo local")
+
+	jarPath := c.JarPath
+	downloaded := false
+	if jarPath == "" {
+		var err error
+		jarPath, _, downloaded, err = release.EnsureArtifact(context.Background(), c.ManifestURL, c.Artifact)
+		if err != nil {
+			return process.State{}, false, fmt.Errorf("não foi possível obter dinamicamente o simulador.jar a partir do release.json: %w", err)
+		}
 	}
-	if _, err := os.Stat(c.JarPath); err != nil {
-		return process.State{}, false, fmt.Errorf("simulador.jar não encontrado em %s", c.JarPath)
+	if jarPath == "" {
+		return process.State{}, false, errors.New("simulador.jar não definido")
 	}
-	java, err := jdk.FindJava()
+	if _, err := os.Stat(jarPath); err != nil {
+		return process.State{}, false, fmt.Errorf("simulador.jar não encontrado em %s", jarPath)
+	}
+	java, err := jdk.EnsureJava21(context.Background(), c.ManifestURL)
 	if err != nil {
 		return process.State{}, false, err
 	}
@@ -96,7 +115,7 @@ func (c Client) Start() (process.State, bool, error) {
 		_ = stdout.Close()
 		return process.State{}, false, err
 	}
-	args := []string{"-jar", c.JarPath}
+	args := []string{"-jar", jarPath}
 	if p := c.port(); p > 0 {
 		args = append(args, "--server.port="+strconv.Itoa(p))
 	}
@@ -112,7 +131,7 @@ func (c Client) Start() (process.State, bool, error) {
 	_ = stderr.Close()
 	exitCh := make(chan error, 1)
 	go func() { exitCh <- cmd.Wait() }()
-	state := process.State{Name: "simulador", PID: cmd.Process.Pid, Port: c.port(), URL: c.BaseURL, JarPath: c.JarPath, StartedAt: time.Now()}
+	state := process.State{Name: "simulador", PID: cmd.Process.Pid, Port: c.port(), URL: c.BaseURL, JarPath: jarPath, StartedAt: time.Now()}
 	if err := process.Save(state); err != nil {
 		_ = cmd.Process.Kill()
 		return state, false, err
@@ -123,17 +142,22 @@ func (c Client) Start() (process.State, bool, error) {
 		select {
 		case err := <-exitCh:
 			_ = process.Delete("simulador")
-			return state, false, fmt.Errorf("processo do simulador.jar encerrou antes de ficar pronto: %v", err)
+			return state, false, fmt.Errorf("processo do simulador.jar encerrou antes de ficar pronto: %v%s", err, logHint(filepath.Join(logDir, "simulador.err.log")))
 		default:
 		}
 		if _, _, err := c.Status(); err == nil {
+			if downloaded {
+				// Mantém o dado no estado para rastreabilidade do artefato obtido por release.json.
+				state.JarPath = jarPath
+				_ = process.Save(state)
+			}
 			return state, false, nil
 		} else {
 			lastErr = err
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	return state, false, fmt.Errorf("simulador foi iniciado, mas /api/info não respondeu no tempo limite; última verificação: %v", lastErr)
+	return state, false, fmt.Errorf("simulador foi iniciado, mas /api/info não respondeu no tempo limite; última verificação: %v%s", lastErr, logHint(filepath.Join(logDir, "simulador.err.log")))
 }
 
 func (c Client) port() int {
@@ -153,4 +177,22 @@ func (c Client) port() int {
 	}
 	v, _ := strconv.Atoi(p)
 	return v
+}
+
+func logHint(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil || len(b) == 0 {
+		return ""
+	}
+	text := strings.TrimSpace(string(b))
+	if text == "" {
+		return ""
+	}
+	if len(text) > 800 {
+		text = text[len(text)-800:]
+		if idx := strings.IndexByte(text, '\n'); idx >= 0 && idx+1 < len(text) {
+			text = text[idx+1:]
+		}
+	}
+	return "\nÚltimas linhas do log de erro: " + text
 }

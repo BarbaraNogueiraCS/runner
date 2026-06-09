@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class Main {
-    private static final SignatureService SERVICE = new FakeSignatureService();
+    private static final SignatureService SERVICE = new GuideSignatureService();
 
     private Main() {}
 
@@ -46,14 +46,14 @@ public final class Main {
 
     private static void localSign(String[] args) throws Exception {
         Map<String, String> flags = Args.parse(args, 1);
-        SignRequest req = new SignRequest(flags.get("input"), flags.get("signer"));
-        System.out.println(SERVICE.sign(req).toJson());
+        SignRequest req = new SignRequest(flags.get("bundle"), flags.get("provenance"), flags.get("crypto-material"), flags.get("cert-chain"), flags.get("timestamp"), flags.get("strategy"), flags.get("policy"), flags.get("config"), flags.get("signer"), flags.get("input"));
+        System.out.println(SERVICE.sign(req));
     }
 
     private static void localValidate(String[] args) throws Exception {
         Map<String, String> flags = Args.parse(args, 1);
-        ValidateRequest req = new ValidateRequest(flags.get("signature"), flags.get("input"));
-        System.out.println(SERVICE.validate(req).toJson());
+        ValidateRequest req = new ValidateRequest(flags.get("signature"), flags.get("timestamp"), flags.get("policy"), flags.get("config"), flags.get("bundle"), flags.get("provenance"), flags.get("input"));
+        System.out.println(SERVICE.validate(req));
     }
 
     private static void startServer(String[] args) throws IOException {
@@ -76,8 +76,8 @@ public final class Main {
             }
             try {
                 Map<String, String> body = Json.parseFlat(readBody(exchange));
-                SignRequest req = new SignRequest(body.get("input"), body.get("signer"));
-                send(exchange, 200, SERVICE.sign(req).toJson());
+                SignRequest req = new SignRequest(body.get("bundle"), body.get("provenance"), body.get("cryptoMaterial"), body.get("certificateChain"), body.get("timestamp"), body.get("strategy"), body.get("policy"), body.get("config"), body.get("signer"), body.get("input"));
+                send(exchange, 200, SERVICE.sign(req));
             } catch (UserInputException e) {
                 send(exchange, 400, Json.error("USER_ERROR", e.getMessage()));
             } catch (Exception e) {
@@ -92,8 +92,8 @@ public final class Main {
             }
             try {
                 Map<String, String> body = Json.parseFlat(readBody(exchange));
-                ValidateRequest req = new ValidateRequest(body.get("signature"), body.get("input"));
-                send(exchange, 200, SERVICE.validate(req).toJson());
+                ValidateRequest req = new ValidateRequest(body.get("signature"), body.get("timestamp"), body.get("policy"), body.get("config"), body.get("bundle"), body.get("provenance"), body.get("input"));
+                send(exchange, 200, SERVICE.validate(req));
             } catch (UserInputException e) {
                 send(exchange, 400, Json.error("USER_ERROR", e.getMessage()));
             } catch (Exception e) {
@@ -149,8 +149,8 @@ public final class Main {
                 assinador.jar - simulação de assinatura digital
 
                 Uso:
-                  java -jar assinador.jar sign --input <arquivo> --signer <nome>
-                  java -jar assinador.jar validate --signature <arquivo> [--input <arquivo>]
+                  java -jar assinador.jar sign --bundle <bundle.json> --provenance <provenance.json> --crypto-material <crypto.json> --cert-chain <certs.json> --timestamp <unix> --policy <uri> [--strategy iat]
+                  java -jar assinador.jar validate --signature <signature.json> --timestamp <unix> --policy <uri> [--bundle <bundle.json> --provenance <provenance.json>]
                   java -jar assinador.jar server [--port 8080] [--idle-timeout-minutes 10]
                 """);
     }

@@ -47,6 +47,8 @@ func status(args []string) int {
 		return apperrors.UsageError
 	}
 	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c.Artifact = defaultText(f["artifact"], c.Artifact)
+	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	state, info, err := c.Status()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Simulador do HubSaúde indisponível em %s. Motivo: %v\n", c.BaseURL, err)
@@ -71,6 +73,8 @@ func info(args []string) int {
 		return apperrors.UsageError
 	}
 	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c.Artifact = defaultText(f["artifact"], c.Artifact)
+	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	out, err := c.Info()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Não foi possível consultar /api/info em %s. Motivo: %v\n", c.BaseURL, err)
@@ -87,6 +91,8 @@ func stop(args []string) int {
 		return apperrors.UsageError
 	}
 	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c.Artifact = defaultText(f["artifact"], c.Artifact)
+	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	out, err := c.Stop()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Não foi possível encerrar o Simulador do HubSaúde em %s. Motivo: %v\n", c.BaseURL, err)
@@ -107,6 +113,8 @@ func start(args []string) int {
 		return apperrors.UsageError
 	}
 	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c.Artifact = defaultText(f["artifact"], c.Artifact)
+	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	state, reused, err := c.Start()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Não foi possível iniciar o Simulador do HubSaúde: %v\n", err)
@@ -128,7 +136,7 @@ Uso:
   simulador status [--url https://localhost:8443] [--insecure]
   simulador info   [--url https://localhost:8443] [--insecure]
   simulador stop   [--url https://localhost:8443] [--insecure]
-  simulador start  [--url https://localhost:8443] [--insecure] [--jar <simulador.jar>]
+  simulador start  [--url https://localhost:8443] [--insecure] [--jar <simulador.jar>] [--artifact simulador|validador] [--release-json <url>]
 
 Observação:
   O Simulador HubSaúde informado no trabalho usa HTTPS local com certificado autoassinado.
@@ -137,7 +145,9 @@ Observação:
 Variáveis de ambiente:
   HUBSAUDE_SIMULATOR_URL  URL padrão do simulador. Padrão: https://localhost:8443
   RUNNER_JAVA             Caminho explícito do executável java
-  RUNNER_HOME             Diretório de estado, logs e cache. Padrão: ~/.hubsaude`)
+  RUNNER_HOME             Diretório de estado, logs e cache. Padrão: ~/.hubsaude
+  RUNNER_RELEASE_JSON     URL opcional para release.json
+  RUNNER_SIMULADOR_ARTIFACT Artefato padrão do release.json: simulador ou validador`)
 }
 
 func parseFlags(args []string) (flags, error) {
@@ -177,6 +187,13 @@ func parseFlags(args []string) (flags, error) {
 }
 
 func boolFlag(f flags, name string) bool { return f[name] == "true" }
+
+func defaultText(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
 
 func compactJSON(b []byte) []byte {
 	var v any

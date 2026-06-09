@@ -47,14 +47,13 @@ func sign(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	input := f["input"]
-	signer := f["signer"]
-	if input == "" || signer == "" {
-		fmt.Fprintln(os.Stderr, "Uso inválido: informe --input e --signer. A validação detalhada é realizada pelo assinador.jar.")
+	if f["input"] == "" && (f["bundle"] == "" || f["provenance"] == "" || f["crypto-material"] == "" || f["cert-chain"] == "" || f["timestamp"] == "" || f["policy"] == "") {
+		fmt.Fprintln(os.Stderr, "Uso inválido: informe --bundle, --provenance, --crypto-material, --cert-chain, --timestamp e --policy. Para compatibilidade, --input ainda gera uma assinatura simulada simples.")
 		return apperrors.UsageError
 	}
 	client := assinador.New(intFlag(f, "port", assinador.DefaultPort), f["jar"])
-	req := assinador.SignRequest{Input: input, Signer: signer}
+	client.ManifestURL = f["release-json"]
+	req := assinador.SignRequest{Bundle: f["bundle"], Provenance: f["provenance"], CryptoMaterial: f["crypto-material"], CertificateChain: f["cert-chain"], Timestamp: f["timestamp"], Strategy: f["strategy"], Policy: f["policy"], Config: f["config"], Signer: f["signer"], Input: f["input"]}
 	var out []byte
 	if boolFlag(f, "local") {
 		stdout, stderr, code, err := client.SignLocal(req)
@@ -106,7 +105,8 @@ func validate(args []string) int {
 		return apperrors.UsageError
 	}
 	client := assinador.New(intFlag(f, "port", assinador.DefaultPort), f["jar"])
-	req := assinador.ValidateRequest{Signature: signature, Input: f["input"]}
+	client.ManifestURL = f["release-json"]
+	req := assinador.ValidateRequest{Signature: signature, Timestamp: f["timestamp"], Policy: f["policy"], Config: f["config"], Bundle: f["bundle"], Provenance: f["provenance"], Input: f["input"]}
 	var out []byte
 	if boolFlag(f, "local") {
 		stdout, stderr, code, err := client.ValidateLocal(req)
@@ -158,6 +158,7 @@ func server(args []string) int {
 		return apperrors.UsageError
 	}
 	client := assinador.New(intFlag(f, "port", assinador.DefaultPort), f["jar"])
+	client.ManifestURL = f["release-json"]
 	switch action {
 	case "start":
 		state, reused, err := client.StartServer(intFlag(f, "idle-timeout-minutes", 0))
@@ -201,16 +202,20 @@ func usage() {
 
 Uso:
   assinatura version
-  assinatura sign --input <arquivo> --signer <nome> [--output <arquivo>] [--local] [--jar <assinador.jar>] [--port 8080]
-  assinatura validate --signature <arquivo> [--input <arquivo>] [--output <arquivo>] [--local] [--jar <assinador.jar>] [--port 8080]
-  assinatura server start --jar <assinador.jar> [--port 8080] [--idle-timeout-minutes 10]
+  assinatura sign --bundle <bundle.json> --provenance <provenance.json> --crypto-material <crypto.json> --cert-chain <certs.json> --timestamp <unix> --policy <uri> [--strategy iat] [--output <arquivo>] [--local] [--jar <assinador.jar>] [--port 8080]
+  assinatura validate --signature <signature.json> --timestamp <unix> --policy <uri> [--bundle <bundle.json> --provenance <provenance.json>] [--output <arquivo>] [--local] [--jar <assinador.jar>] [--port 8080]
+
+Compatibilidade:
+  assinatura sign --input <arquivo> --signer <nome> [--local] [--jar <assinador.jar>]
+  assinatura server start --jar <assinador.jar> [--port 8080] [--idle-timeout-minutes 10] [--release-json <url>]
   assinatura server status [--port 8080]
   assinatura server stop [--port 8080]
 
 Variáveis de ambiente:
   RUNNER_ASSINADOR_JAR  Caminho padrão do assinador.jar
   RUNNER_JAVA           Caminho explícito do executável java
-  RUNNER_HOME           Diretório de estado, logs e cache. Padrão: ~/.hubsaude`)
+  RUNNER_HOME           Diretório de estado, logs e cache. Padrão: ~/.hubsaude
+  release-json          URL opcional para release.json com URLs de runtime Java`)
 }
 
 func parseFlags(args []string) (flags, error) {
