@@ -13,6 +13,7 @@ import (
 
 	"github.com/kyriosdata/runner/internal/httpx"
 	"github.com/kyriosdata/runner/internal/jdk"
+	"github.com/kyriosdata/runner/internal/netutil"
 	"github.com/kyriosdata/runner/internal/paths"
 	"github.com/kyriosdata/runner/internal/process"
 )
@@ -65,6 +66,10 @@ func (c Client) Start() (process.State, bool, error) {
 	if state, _, err := c.Status(); err == nil {
 		return state, true, nil
 	}
+	port := c.port()
+	if port > 0 && !netutil.IsTCPPortFree(port) {
+		return process.State{}, false, fmt.Errorf("porta %d já está em uso por outro processo, mas %s/api/info não respondeu como Simulador HubSaúde", port, c.BaseURL)
+	}
 	if c.JarPath == "" {
 		return process.State{}, false, errors.New("simulador não está acessível e nenhum simulador.jar foi informado. Use --jar para iniciar um arquivo local")
 	}
@@ -103,19 +108,32 @@ func (c Client) Start() (process.State, bool, error) {
 		_ = stderr.Close()
 		return process.State{}, false, err
 	}
+	_ = stdout.Close()
+	_ = stderr.Close()
+	exitCh := make(chan error, 1)
+	go func() { exitCh <- cmd.Wait() }()
 	state := process.State{Name: "simulador", PID: cmd.Process.Pid, Port: c.port(), URL: c.BaseURL, JarPath: c.JarPath, StartedAt: time.Now()}
 	if err := process.Save(state); err != nil {
+		_ = cmd.Process.Kill()
 		return state, false, err
 	}
-	_ = cmd.Process.Release()
 	deadline := time.Now().Add(30 * time.Second)
+	var lastErr error
 	for time.Now().Before(deadline) {
+		select {
+		case err := <-exitCh:
+			_ = process.Delete("simulador")
+			return state, false, fmt.Errorf("processo do simulador.jar encerrou antes de ficar pronto: %v", err)
+		default:
+		}
 		if _, _, err := c.Status(); err == nil {
 			return state, false, nil
+		} else {
+			lastErr = err
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	return state, false, errors.New("simulador foi iniciado, mas /api/info não respondeu no tempo limite")
+	return state, false, fmt.Errorf("simulador foi iniciado, mas /api/info não respondeu no tempo limite; última verificação: %v", lastErr)
 }
 
 func (c Client) port() int {

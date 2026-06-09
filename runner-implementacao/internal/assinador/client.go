@@ -8,10 +8,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kyriosdata/runner/internal/httpx"
 	"github.com/kyriosdata/runner/internal/jdk"
+	"github.com/kyriosdata/runner/internal/netutil"
 	"github.com/kyriosdata/runner/internal/paths"
 	"github.com/kyriosdata/runner/internal/process"
 )
@@ -44,7 +46,7 @@ func New(port int, jar string) Client {
 	return Client{Port: port, JarPath: jar, Timeout: 10 * time.Second}
 }
 
-func (c Client) baseURL() string { return fmt.Sprintf("http://localhost:%d", c.Port) }
+func (c Client) baseURL() string { return fmt.Sprintf("http://127.0.0.1:%d", c.Port) }
 
 func (c Client) Health() error {
 	client := httpx.New(2*time.Second, false)
@@ -71,6 +73,9 @@ func (c Client) StartServer(idleMinutes int) (process.State, bool, error) {
 		}
 		return state, true, nil
 	}
+	if !netutil.IsTCPPortFree(c.Port) {
+		return process.State{}, false, fmt.Errorf("porta %d já está em uso por outro processo. Use outra porta, por exemplo --port 8080 ou --port 18080", c.Port)
+	}
 	if c.JarPath == "" {
 		return process.State{}, false, errors.New("assinador.jar não informado. Use --jar ou RUNNER_ASSINADOR_JAR")
 	}
@@ -88,11 +93,13 @@ func (c Client) StartServer(idleMinutes int) (process.State, bool, error) {
 	if err != nil {
 		return process.State{}, false, err
 	}
-	stdout, err := os.OpenFile(filepath.Join(logDir, "assinador.out.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	stdoutPath := filepath.Join(logDir, "assinador.out.log")
+	stderrPath := filepath.Join(logDir, "assinador.err.log")
+	stdout, err := os.OpenFile(stdoutPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return process.State{}, false, err
 	}
-	stderr, err := os.OpenFile(filepath.Join(logDir, "assinador.err.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	stderr, err := os.OpenFile(stderrPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		_ = stdout.Close()
 		return process.State{}, false, err
@@ -109,19 +116,34 @@ func (c Client) StartServer(idleMinutes int) (process.State, bool, error) {
 		_ = stderr.Close()
 		return process.State{}, false, err
 	}
+	_ = stdout.Close()
+	_ = stderr.Close()
+
+	exitCh := make(chan error, 1)
+	go func() { exitCh <- cmd.Wait() }()
+
 	state := process.State{Name: "assinador", PID: cmd.Process.Pid, Port: c.Port, URL: c.baseURL(), JarPath: c.JarPath, StartedAt: time.Now()}
 	if err := process.Save(state); err != nil {
+		_ = cmd.Process.Kill()
 		return state, false, err
 	}
-	_ = cmd.Process.Release()
 	deadline := time.Now().Add(15 * time.Second)
+	var lastHealthErr error
 	for time.Now().Before(deadline) {
+		select {
+		case err := <-exitCh:
+			_ = process.Delete("assinador")
+			return state, false, fmt.Errorf("processo do assinador.jar encerrou antes de ficar pronto: %v%s", err, logHint(stderrPath))
+		default:
+		}
 		if err := c.Health(); err == nil {
 			return state, false, nil
+		} else {
+			lastHealthErr = err
 		}
 		time.Sleep(300 * time.Millisecond)
 	}
-	return state, false, errors.New("servidor do assinador foi iniciado, mas não ficou pronto no tempo limite")
+	return state, false, fmt.Errorf("servidor do assinador foi iniciado, mas não ficou pronto no tempo limite; última verificação de saúde: %v%s", lastHealthErr, logHint(stderrPath))
 }
 
 func (c Client) StopServer() error {
@@ -199,4 +221,22 @@ func WriteOutput(out []byte, outputPath string, stdout io.Writer) error {
 	}
 	_, err := fmt.Fprintf(stdout, "Resultado gravado em %s\n", outputPath)
 	return err
+}
+
+func logHint(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil || len(b) == 0 {
+		return ""
+	}
+	text := strings.TrimSpace(string(b))
+	if text == "" {
+		return ""
+	}
+	if len(text) > 800 {
+		text = text[len(text)-800:]
+		if idx := strings.IndexByte(text, '\n'); idx >= 0 && idx+1 < len(text) {
+			text = text[idx+1:]
+		}
+	}
+	return "\nÚltimas linhas do log de erro: " + text
 }

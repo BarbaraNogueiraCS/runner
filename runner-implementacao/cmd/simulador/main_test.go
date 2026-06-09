@@ -13,3 +13,13 @@ func TestUnknownCommand(t *testing.T) {
 		t.Fatal("comando desconhecido deveria retornar erro")
 	}
 }
+
+func TestParseFlagsAcceptsEqualsSyntax(t *testing.T) {
+	f, err := parseFlags([]string{"--url=https://localhost:8443", "--insecure"})
+	if err != nil {
+		t.Fatalf("parseFlags retornou erro: %v", err)
+	}
+	if f["url"] != "https://localhost:8443" || f["insecure"] != "true" {
+		t.Fatalf("flags parseadas incorretamente: %#v", f)
+	}
+}

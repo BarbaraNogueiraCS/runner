@@ -220,16 +220,31 @@ func parseFlags(args []string) (flags, error) {
 		if !strings.HasPrefix(a, "--") {
 			return out, fmt.Errorf("argumento inesperado: %s", a)
 		}
-		key := strings.TrimPrefix(a, "--")
+		keyValue := strings.TrimPrefix(a, "--")
+		key := keyValue
+		value := ""
+		if idx := strings.Index(keyValue, "="); idx >= 0 {
+			key = keyValue[:idx]
+			value = keyValue[idx+1:]
+		}
+		if key == "" {
+			return out, fmt.Errorf("flag inválida: %s", a)
+		}
 		if key == "local" || key == "help" {
+			if value != "" {
+				return out, fmt.Errorf("flag booleana não deve receber valor: --%s", key)
+			}
 			out[key] = "true"
 			continue
 		}
-		if i+1 >= len(args) {
-			return out, fmt.Errorf("flag sem valor: --%s", key)
+		if value == "" {
+			if i+1 >= len(args) {
+				return out, fmt.Errorf("flag sem valor: --%s", key)
+			}
+			value = args[i+1]
+			i++
 		}
-		out[key] = args[i+1]
-		i++
+		out[key] = value
 	}
 	return out, nil
 }
