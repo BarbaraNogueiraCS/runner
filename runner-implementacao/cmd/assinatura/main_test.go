@@ -13,3 +13,13 @@ func TestUnknownCommand(t *testing.T) {
 		t.Fatal("comando desconhecido deveria retornar erro")
 	}
 }
+
+func TestParseFlagsAcceptsEqualsSyntax(t *testing.T) {
+	f, err := parseFlags([]string{"--input=doc.txt", "--signer", "Maria", "--local"})
+	if err != nil {
+		t.Fatalf("parseFlags retornou erro: %v", err)
+	}
+	if f["input"] != "doc.txt" || f["signer"] != "Maria" || f["local"] != "true" {
+		t.Fatalf("flags parseadas incorretamente: %#v", f)
+	}
+}
