@@ -2,7 +2,7 @@
   "documentHash": "348bc85f81b066bfcbf1c909eabfda7d8c311eea9bf271bec28fc7554d871bce",
   "operation": "SIGN",
   "signatureValue": "SIMULATED-SIGNATURE-348bc85f81b066bfcbf1c909",
-  "signedAt": "2026-06-09T17:35:24.329186854Z",
-  "signer": "Bárbara Runner",
+  "signedAt": "2026-06-09T18:26:45.615750847Z",
+  "signer": "Maria Runner",
   "status": "SUCCESS"
 }
