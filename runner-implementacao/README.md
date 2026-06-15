@@ -54,7 +54,7 @@ runner/
 │   ├── release/
 │   ├── paths/
 │   ├── process/
-│   └── simulator/
+│   └── simulador/
 ├── assinador/
 │   ├── Makefile
 │   └── src/
@@ -289,7 +289,7 @@ go run ./cmd/simulador stop --url https://localhost:8443 --insecure
 | `RUNNER_HOME` | Altera o diretório gerenciado. Padrão: `~/.hubsaude`. |
 | `RUNNER_JAVA` | Informa o caminho exato do executável `java`. |
 | `RUNNER_ASSINADOR_JAR` | Caminho padrão do `assinador.jar`. |
-| `HUBSAUDE_SIMULATOR_URL` | URL padrão do Simulador do HubSaúde. |
+| `HUBSAUDE_SIMULADOR_URL` | URL padrão do Simulador do HubSaúde. |
 | `RUNNER_RELEASE_JSON` | URL do `release.json` usado para baixar simulador/validador e runtime Java. |
 | `RUNNER_SIMULADOR_ARTIFACT` | Artefato a baixar para o CLI `simulador`: `simulador` ou `validador`. |
 

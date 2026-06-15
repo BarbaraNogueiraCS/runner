@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/kyriosdata/runner/internal/apperrors"
-	"github.com/kyriosdata/runner/internal/simulator"
+	"github.com/kyriosdata/runner/internal/simulador"
 )
 
 var version = "dev"
@@ -46,7 +46,7 @@ func status(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
 	c.Artifact = defaultText(f["artifact"], c.Artifact)
 	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	state, info, err := c.Status()
@@ -72,7 +72,7 @@ func info(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
 	c.Artifact = defaultText(f["artifact"], c.Artifact)
 	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	out, err := c.Info()
@@ -90,7 +90,7 @@ func stop(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
 	c.Artifact = defaultText(f["artifact"], c.Artifact)
 	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	out, err := c.Stop()
@@ -112,7 +112,7 @@ func start(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulator.New(f["url"], boolFlag(f, "insecure"), f["jar"])
+	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
 	c.Artifact = defaultText(f["artifact"], c.Artifact)
 	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
 	state, reused, err := c.Start()
@@ -143,7 +143,7 @@ Observação:
   Por isso, em ambiente de desenvolvimento, use --insecure ao consultar https://localhost:8443.
 
 Variáveis de ambiente:
-  HUBSAUDE_SIMULATOR_URL  URL padrão do simulador. Padrão: https://localhost:8443
+  HUBSAUDE_SIMULADOR_URL  URL padrão do simulador. Padrão: https://localhost:8443
   RUNNER_JAVA             Caminho explícito do executável java
   RUNNER_HOME             Diretório de estado, logs e cache. Padrão: ~/.hubsaude
   RUNNER_RELEASE_JSON     URL opcional para release.json

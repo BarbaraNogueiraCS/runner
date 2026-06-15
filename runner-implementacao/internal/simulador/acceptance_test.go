@@ -1,4 +1,4 @@
-package simulator
+package simulador
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAcceptanceStartRejectsBusyPortThatIsNotSimulator(t *testing.T) {
+func TestAcceptanceStartRejectsBusyPortThatIsNotSimulador(t *testing.T) {
 	srv := httptest.NewServer(http.NotFoundHandler())
 	defer srv.Close()
 
