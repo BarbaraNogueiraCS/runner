@@ -341,3 +341,7 @@ O workflow também gera `checksums.txt` e assina todos os artefatos com Cosign e
 - A integração PKCS#11 real não foi implementada; o `assinador.jar` contém simulação de assinatura e validação, conforme escopo acadêmico.
 - A validação de cadeia ICP-Brasil, OCSP, CRL e TSA real foi substituída por validação estrutural e simulação controlada.
 - O CLI `simulador` depende do Simulador HubSaúde real para os comandos `status`, `info` e `stop`.
+
+## Artefatos executáveis de release
+
+A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`docs/artefatos-executaveis.md`](docs/artefatos-executaveis.md). O workflow responsável é `.github/workflows/release.yml`.
