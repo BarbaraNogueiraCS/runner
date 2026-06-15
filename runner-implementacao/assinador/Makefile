@@ -40,6 +40,20 @@ test: $(JAR) samples
 	printf '%s\n' '{"type":"TOKEN","identifier":"runner"}' > target/crypto-token-sem-pin.json; \
 	! java -jar $(JAR) sign --bundle target/bundle.json --provenance target/provenance.json --crypto-material target/crypto-token-sem-pin.json --cert-chain target/certs.json --timestamp $$TS --policy '$(POLICY)' --config target/config.json > target/token-sem-pin.out 2> target/token-sem-pin.err; \
 	grep -q 'CRYPTO.PIN-REQUIRED' target/token-sem-pin.err
+	@TS=$$(cat target/timestamp.txt); \
+	! java -jar $(JAR) sign --provenance target/provenance.json --crypto-material target/crypto.json --cert-chain target/certs.json --timestamp $$TS --policy '$(POLICY)' --config target/config.json > target/missing-bundle.out 2> target/missing-bundle.err; \
+	grep -q 'INPUT.MISSING-PARAMETER' target/missing-bundle.err
+	@TS=$$(cat target/timestamp.txt); \
+	! java -jar $(JAR) sign --bundle target/bundle.json --provenance target/provenance.json --crypto-material target/crypto.json --cert-chain target/certs.json --timestamp $$TS --policy 'politica-invalida' --config target/config.json > target/invalid-policy.out 2> target/invalid-policy.err; \
+	grep -q 'POLICY.ID-INVALID' target/invalid-policy.err
+	@TS=$$(cat target/timestamp.txt); \
+	printf '%s\n' '{"resourceType":"Provenance","target":[{"reference":"urn:uuid:22222222-2222-4222-8222-222222222222"}]}' > target/provenance-target-invalido.json; \
+	! java -jar $(JAR) sign --bundle target/bundle.json --provenance target/provenance-target-invalido.json --crypto-material target/crypto.json --cert-chain target/certs.json --timestamp $$TS --policy '$(POLICY)' --config target/config.json > target/invalid-provenance.out 2> target/invalid-provenance.err; \
+	grep -q 'FORMAT.PROVENANCE-TARGET-NOT-FOUND' target/invalid-provenance.err
+	@TS=$$(cat target/timestamp.txt); \
+	printf '%s\n' '{"resourceType":"OperationOutcome"}' > target/not-signature.json; \
+	! java -jar $(JAR) validate --signature target/not-signature.json --timestamp $$TS --policy '$(POLICY)' --bundle target/bundle.json --provenance target/provenance.json --config target/config.json > target/not-signature.out 2> target/not-signature.err; \
+	grep -q 'FORMAT.SIGNATURE-DATA-INVALID' target/not-signature.err
 	@echo 'Testes locais do assinador.jar passaram.'
 
 clean:

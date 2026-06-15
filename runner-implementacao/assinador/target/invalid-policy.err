@@ -1,0 +1,1 @@
+{"resourceType":"OperationOutcome","status":"ERROR","valid":false,"code":"USER_ERROR","message":"POLICY.ID-INVALID: política deve seguir {baseUri}|major.minor.patch","issue":[{"severity":"error","code":"USER_ERROR","diagnostics":"POLICY.ID-INVALID: política deve seguir {baseUri}|major.minor.patch"}]}
