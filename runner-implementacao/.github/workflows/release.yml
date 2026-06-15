@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+  id-token: write
+
+# Artefatos esperados para uma tag v1.0.0:
+# assinatura-1.0.0-windows-amd64.exe
+# assinatura-1.0.0-linux-amd64.AppImage
+# assinatura-1.0.0-macos-amd64.dmg
+# simulador-1.0.0-windows-amd64.exe
+# simulador-1.0.0-linux-amd64.AppImage
+# simulador-1.0.0-macos-amd64.dmg
+
+jobs:
+  test:
+    name: Testar projeto
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Rodar testes Go
+        run: go test ./...
+
+      - name: Rodar go vet
+        run: go vet ./...
+
+  build-release:
+    name: Gerar artefatos de release
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Validar tag SemVer
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag inválida: $TAG"
+            echo "Use SemVer no formato v1.0.0, v1.2.3 etc."
+            exit 1
+          fi
+
+      - name: Definir versão
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Versão da release: $VERSION"
+
+      - name: Criar diretório de release
+        run: mkdir -p release
+
+      - name: Gerar binários Windows amd64
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o "release/assinatura-${VERSION}-windows-amd64.exe" ./cmd/assinatura
+          GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o "release/simulador-${VERSION}-windows-amd64.exe" ./cmd/simulador
+
+      - name: Gerar binários Linux amd64
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o "release/assinatura-${VERSION}-linux-amd64.AppImage" ./cmd/assinatura
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o "release/simulador-${VERSION}-linux-amd64.AppImage" ./cmd/simulador
+          chmod +x "release/assinatura-${VERSION}-linux-amd64.AppImage"
+          chmod +x "release/simulador-${VERSION}-linux-amd64.AppImage"
+
+      - name: Gerar binários macOS amd64
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o "release/assinatura-${VERSION}-macos-amd64.dmg" ./cmd/assinatura
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o "release/simulador-${VERSION}-macos-amd64.dmg" ./cmd/simulador
+
+      - name: Gerar checksums SHA256
+        run: |
+          cd release
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Instalar Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Assinar artefatos com Cosign
+        run: |
+          for artifact in release/*; do
+            if [ -f "$artifact" ] && [ "$(basename "$artifact")" != "checksums.txt" ]; then
+              cosign sign-blob --yes \
+                --output-signature "${artifact}.sig" \
+                --output-certificate "${artifact}.pem" \
+                --bundle "${artifact}.bundle" \
+                "$artifact"
+            fi
+          done
+
+      - name: Publicar GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
