@@ -1,4 +1,4 @@
-package simulator
+package simulador
 
 import (
 	"context"
@@ -34,7 +34,7 @@ type Client struct {
 
 func New(baseURL string, insecure bool, jar string) Client {
 	if baseURL == "" {
-		baseURL = os.Getenv("HUBSAUDE_SIMULATOR_URL")
+		baseURL = os.Getenv("HUBSAUDE_SIMULADOR_URL")
 	}
 	if baseURL == "" {
 		baseURL = DefaultURL

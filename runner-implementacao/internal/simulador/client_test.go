@@ -1,4 +1,4 @@
-package simulator
+package simulador
 
 import (
 	"net/http"
@@ -39,7 +39,7 @@ func TestStatusUsesApiInfo(t *testing.T) {
 	}
 }
 
-func TestStartReusesRunningSimulator(t *testing.T) {
+func TestStartReusesRunningSimulador(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/info" {
 			_, _ = w.Write([]byte(`{"version":"0.1.7"}`))

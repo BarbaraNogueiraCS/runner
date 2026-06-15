@@ -31,7 +31,7 @@ Este documento registra a rastreabilidade entre os critérios solicitados e os p
 
 | Critério | Implementação |
 |---|---|
-| Verificar porta 8443 antes de iniciar | `internal/simulator/client.go`, método `Start`, usa `Status` e `netutil.IsTCPPortFree` |
+| Verificar porta 8443 antes de iniciar | `internal/simulador/client.go`, método `Start`, usa `Status` e `netutil.IsTCPPortFree` |
 | Permitir iniciar simulador | `simulador start` |
 | Permitir parar simulador | `simulador stop`, endpoint `/shutdown` |
 | Exibir status | `simulador status`, endpoint `/api/info` |
