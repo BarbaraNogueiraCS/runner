@@ -1,23 +1,55 @@
 #!/usr/bin/env bash
-# Verifica, localmente, se o workflow de release contém os nomes, checksums,
-# publicação em GitHub Releases e assinatura Cosign keyless/OIDC esperados.
+# Verifica, localmente, se o workflow de release está na raiz do repositório
+# e contém nomes, checksums, publicação em GitHub Releases e assinatura Cosign OIDC.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKFLOW="$ROOT/.github/workflows/release.yml"
-DOC="$ROOT/docs/integridade-assinatura-artefatos.md"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MODULE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [[ ! -f "$WORKFLOW" ]]; then
-  echo "ERRO: workflow de release não encontrado: $WORKFLOW" >&2
+find_repo_root() {
+  local dir="$MODULE_ROOT"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/.github/workflows/release.yml" ]]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
+REPO_ROOT="$(find_repo_root || true)"
+if [[ -z "${REPO_ROOT:-}" ]]; then
+  echo "ERRO: workflow de release não encontrado na raiz do repositório ou em diretórios superiores." >&2
+  echo "Esperado: <raiz-do-repositorio>/.github/workflows/release.yml" >&2
   exit 1
 fi
+
+WORKFLOW="$REPO_ROOT/.github/workflows/release.yml"
+BUILD_WORKFLOW="$REPO_ROOT/.github/workflows/build.yml"
+DOC="$MODULE_ROOT/docs/integridade-assinatura-artefatos.md"
+GITIGNORE="$REPO_ROOT/.gitignore"
 
 if [[ ! -f "$DOC" ]]; then
   echo "ERRO: documento de integridade de artefatos não encontrado: $DOC" >&2
   exit 1
 fi
 
+if [[ ! -f "$GITIGNORE" ]]; then
+  echo "ERRO: .gitignore deve ficar na raiz do repositório: $GITIGNORE" >&2
+  exit 1
+fi
+
+if [[ -f "$MODULE_ROOT/.github/workflows/release.yml" ]]; then
+  echo "ERRO: workflow duplicado encontrado dentro de runner-implementacao/.github." >&2
+  echo "Mantenha workflows somente em <raiz-do-repositorio>/.github/workflows/." >&2
+  exit 1
+fi
+
 required_workflow_patterns=(
+  "working-directory: runner-implementacao"
+  "cache-dependency-path: runner-implementacao/go.mod"
+  "path: runner-implementacao/dist/*"
   "assinatura-\${VERSION}-windows-amd64.exe"
   "assinatura-\${VERSION}-linux-amd64.AppImage"
   "assinatura-\${VERSION}-macos-amd64.dmg"
@@ -39,10 +71,27 @@ required_workflow_patterns=(
 
 for pattern in "${required_workflow_patterns[@]}"; do
   if ! grep -Fq -- "$pattern" "$WORKFLOW"; then
-    echo "ERRO: padrão ausente no workflow: $pattern" >&2
+    echo "ERRO: padrão ausente no workflow de release: $pattern" >&2
     exit 1
   fi
 done
+
+if [[ -f "$BUILD_WORKFLOW" ]]; then
+  required_build_patterns=(
+    "working-directory: runner-implementacao"
+    "branches:"
+    "develop"
+    "feature/**"
+    "go test ./..."
+    "go vet ./..."
+  )
+  for pattern in "${required_build_patterns[@]}"; do
+    if ! grep -Fq -- "$pattern" "$BUILD_WORKFLOW"; then
+      echo "ERRO: padrão ausente no build.yml: $pattern" >&2
+      exit 1
+    fi
+  done
+fi
 
 required_doc_patterns=(
   "<artefato>.sig"
@@ -62,4 +111,4 @@ for pattern in "${required_doc_patterns[@]}"; do
   fi
 done
 
-echo "Workflow e documentação contêm artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem esperados."
+echo "OK: .github e .gitignore estão na raiz; workflows usam runner-implementacao; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem."

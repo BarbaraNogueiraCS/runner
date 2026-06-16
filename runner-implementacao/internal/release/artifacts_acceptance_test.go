@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func projectRoot(t *testing.T) string {
+func moduleRoot(t *testing.T) string {
 	t.Helper()
 	dir, err := os.Getwd()
 	if err != nil {
@@ -25,10 +25,25 @@ func projectRoot(t *testing.T) string {
 	}
 }
 
+func repositoryRoot(t *testing.T) string {
+	t.Helper()
+	dir := moduleRoot(t)
+	for {
+		workflow := filepath.Join(dir, ".github", "workflows", "release.yml")
+		if _, err := os.Stat(workflow); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf(".github/workflows/release.yml não encontrado a partir de %s", moduleRoot(t))
+		}
+		dir = parent
+	}
+}
+
 func readWorkflow(t *testing.T) string {
 	t.Helper()
-	root := projectRoot(t)
-	workflowPath := filepath.Join(root, ".github", "workflows", "release.yml")
+	workflowPath := filepath.Join(repositoryRoot(t), ".github", "workflows", "release.yml")
 	content, err := os.ReadFile(workflowPath)
 	if err != nil {
 		t.Fatalf("workflow de release não encontrado: %v", err)
@@ -58,11 +73,34 @@ func TestReleaseWorkflowDeclaresExecutableArtifacts(t *testing.T) {
 	}
 }
 
+func TestReleaseWorkflowIsAtRepositoryRootAndUsesModuleSubdirectory(t *testing.T) {
+	repo := repositoryRoot(t)
+	module := moduleRoot(t)
+	if repo == module {
+		t.Fatalf("este teste espera workflow na raiz do repositório e código em subpasta; repo=%s module=%s", repo, module)
+	}
+	workflow := readWorkflow(t)
+
+	required := []string{
+		"working-directory: runner-implementacao",
+		"path: runner-implementacao/dist/*",
+		"cache-dependency-path: runner-implementacao/go.mod",
+	}
+	for _, item := range required {
+		if !strings.Contains(workflow, item) {
+			t.Fatalf("workflow não está ajustado para o projeto em subpasta: %s", item)
+		}
+	}
+}
+
 func TestReleaseWorkflowRequiresSemVerTags(t *testing.T) {
 	workflow := readWorkflow(t)
 
 	if !strings.Contains(workflow, "^v[0-9]+\\.[0-9]+\\.[0-9]+$") {
 		t.Fatalf("workflow deve validar tags SemVer no formato vMAJOR.MINOR.PATCH")
+	}
+	if !strings.Contains(workflow, "tags:") || !strings.Contains(workflow, "v[0-9]+.[0-9]+.[0-9]+") {
+		t.Fatalf("workflow deve ser acionado por tags SemVer")
 	}
 }
 
@@ -87,7 +125,7 @@ func TestReleaseWorkflowSignsArtifactsWithCosignOIDCAndTransparencyLog(t *testin
 }
 
 func TestReleaseDocumentationExplainsCosignVerification(t *testing.T) {
-	root := projectRoot(t)
+	root := moduleRoot(t)
 	docPath := filepath.Join(root, "docs", "integridade-assinatura-artefatos.md")
 	content, err := os.ReadFile(docPath)
 	if err != nil {

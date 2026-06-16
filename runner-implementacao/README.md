@@ -42,26 +42,30 @@ Limitação assumida: a operação criptográfica real, OCSP, CRL, TSA real e PK
 ## 4. Estrutura de pastas
 
 ```text
-runner/
-├── cmd/
-│   ├── assinatura/
-│   └── simulador/
-├── internal/
-│   ├── apperrors/
-│   ├── assinador/
-│   ├── httpx/
-│   ├── jdk/
-│   ├── release/
-│   ├── paths/
-│   ├── process/
-│   └── simulador/
-├── assinador/
-│   ├── Makefile
-│   └── src/
-├── docs/adr/
-├── examples/
-└── .github/workflows/
+runner/                         # raiz do repositório Git/GitHub
+├── .github/workflows/           # GitHub Actions: build.yml e release.yml
+├── .gitignore                   # regras de arquivos gerados/temporários
+└── runner-implementacao/        # raiz do módulo Go e do código-fonte
+    ├── cmd/
+    │   ├── assinatura/
+    │   └── simulador/
+    ├── internal/
+    │   ├── apperrors/
+    │   ├── assinador/
+    │   ├── httpx/
+    │   ├── jdk/
+    │   ├── release/
+    │   ├── paths/
+    │   ├── process/
+    │   └── simulador/
+    ├── assinador/
+    │   ├── Makefile
+    │   └── src/
+    ├── docs/adr/
+    └── examples/
 ```
+
+A pasta `.github` e o arquivo `.gitignore` ficam na raiz do repositório porque o GitHub Actions só reconhece workflows em `.github/workflows` a partir da raiz do repositório Git. Como o código está em `runner-implementacao`, os workflows usam `working-directory: runner-implementacao`.
 
 ## 5. Pré-requisitos
 
@@ -323,7 +327,7 @@ A implementação possui provisionamento automático de runtime Java e artefatos
 
 ## 15. Releases e assinatura de artefatos
 
-O workflow `.github/workflows/release.yml` publica binários pré-compilados para as três plataformas no GitHub Releases quando uma tag `v*` é criada. Para a tag `v1.0.0`, os nomes esperados são:
+O workflow `.github/workflows/release.yml`, localizado na raiz do repositório, publica binários pré-compilados para as três plataformas no GitHub Releases quando uma tag `v*` é criada. Para a tag `v1.0.0`, os nomes esperados são:
 
 ```text
 assinatura-1.0.0-windows-amd64.exe
@@ -344,4 +348,4 @@ O workflow também gera `checksums.txt` e assina todos os artefatos com Cosign e
 
 ## Artefatos executáveis de release
 
-A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`docs/artefatos-executaveis.md`](docs/artefatos-executaveis.md). A política de integridade, os arquivos obrigatórios `<artefato>.sig` e `<artefato>.pem`, o uso de OIDC/transparency log e os comandos de verificação estão em [`docs/integridade-assinatura-artefatos.md`](docs/integridade-assinatura-artefatos.md). O workflow responsável é `.github/workflows/release.yml`.
+A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`docs/artefatos-executaveis.md`](docs/artefatos-executaveis.md). A política de integridade, os arquivos obrigatórios `<artefato>.sig` e `<artefato>.pem`, o uso de OIDC/transparency log e os comandos de verificação estão em [`docs/integridade-assinatura-artefatos.md`](docs/integridade-assinatura-artefatos.md). O workflow responsável é `.github/workflows/release.yml` na raiz do repositório Git. Como o módulo Go está em `runner-implementacao`, o workflow usa `working-directory: runner-implementacao`.
