@@ -19,7 +19,7 @@ A versão `1.0.0` é apenas exemplo. A versão real é extraída automaticamente
 
 ## Distribuição
 
-A distribuição é automatizada por `.github/workflows/release.yml`.
+A distribuição é automatizada por `.github/workflows/release.yml`, que deve ficar na raiz do repositório Git. O código-fonte fica em `runner-implementacao`, por isso o workflow executa os comandos com `working-directory: runner-implementacao`.
 
 O workflow é disparado por tags `v*` e valida que a tag segue SemVer no formato:
 

@@ -8,7 +8,7 @@ Todos os binários e artefatos distribuídos em uma release devem permitir verif
 
 ## 2. Requisito implementado
 
-O workflow `.github/workflows/release.yml` executa automaticamente a assinatura durante a publicação da release.
+O workflow `.github/workflows/release.yml`, localizado na raiz do repositório Git, executa automaticamente a assinatura durante a publicação da release.
 
 A assinatura é feita no job `publish`, após a geração dos artefatos para Windows, Linux e macOS. O workflow declara:
 
