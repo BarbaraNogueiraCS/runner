@@ -1,0 +1,26 @@
+# Go / builds
+bin/
+dist/
+runner-implementacao/bin/
+runner-implementacao/dist/
+*.test
+coverage.out
+runner-implementacao/coverage.out
+
+# Java build outputs
+runner-implementacao/assinador/out/
+runner-implementacao/assinador/target/
+*.class
+
+# Generated examples / local outputs
+runner-implementacao/examples/*.json
+runner-implementacao/release/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Runtime state
+.hubsaude/
+*.log

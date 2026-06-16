@@ -52,9 +52,9 @@ Este documento registra a rastreabilidade entre os critérios solicitados e os p
 
 | Critério | Implementação |
 |---|---|
-| Binário Windows amd64 | `.github/workflows/release.yml`, artefatos `*.exe` |
-| Binário Linux amd64 | `.github/workflows/release.yml`, artefatos `*.AppImage` |
-| Binário macOS amd64 | `.github/workflows/release.yml`, artefatos `*.dmg` |
+| Binário Windows amd64 | `.github/workflows/release.yml` na raiz do repositório, artefatos `*.exe` |
+| Binário Linux amd64 | `.github/workflows/release.yml` na raiz do repositório, artefatos `*.AppImage` |
+| Binário macOS amd64 | `.github/workflows/release.yml` na raiz do repositório, artefatos `*.dmg` |
 | GitHub Releases | `softprops/action-gh-release@v2` |
 | Checksums SHA256 | etapa `sha256sum * > checksums.txt` |
 | SemVer | workflow aceita tags `v*` e valida padrão `vMAJOR.MINOR.PATCH` |
