@@ -59,3 +59,12 @@ O campo `id-token: write` permite a assinatura com identidade OIDC e o registro 
 ## Limite operacional
 
 A criação e publicação real dos releases depende do projeto estar hospedado no GitHub e de uma tag SemVer ser enviada ao repositório. O código já contém o workflow necessário, mas a publicação efetiva ocorre no GitHub Actions.
+
+
+## Documento complementar
+
+Os detalhes completos sobre assinatura Cosign, OIDC, transparency log, arquivos `.sig`, `.pem` e comandos de verificação estão em:
+
+```text
+docs/integridade-assinatura-artefatos.md
+```

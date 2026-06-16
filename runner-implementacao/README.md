@@ -334,7 +334,7 @@ simulador-1.0.0-linux-amd64.AppImage
 simulador-1.0.0-macos-amd64.dmg
 ```
 
-O workflow também gera `checksums.txt` e assina todos os artefatos com Cosign em modo keyless/OIDC, produzindo `.sig`, `.pem` e `.bundle` para cada arquivo assinado.
+O workflow também gera `checksums.txt` e assina todos os artefatos com Cosign em modo keyless/OIDC, com envio explícito ao transparency log do Sigstore (`--tlog-upload=true`). Para cada arquivo assinado são publicados `.sig`, `.pem` e `.bundle`.
 
 ## 16. Limitações conhecidas
 
@@ -344,4 +344,4 @@ O workflow também gera `checksums.txt` e assina todos os artefatos com Cosign e
 
 ## Artefatos executáveis de release
 
-A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`docs/artefatos-executaveis.md`](docs/artefatos-executaveis.md). O workflow responsável é `.github/workflows/release.yml`.
+A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`docs/artefatos-executaveis.md`](docs/artefatos-executaveis.md). A política de integridade, os arquivos obrigatórios `<artefato>.sig` e `<artefato>.pem`, o uso de OIDC/transparency log e os comandos de verificação estão em [`docs/integridade-assinatura-artefatos.md`](docs/integridade-assinatura-artefatos.md). O workflow responsável é `.github/workflows/release.yml`.
