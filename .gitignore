@@ -1,26 +1,57 @@
-# Go / builds
-bin/
-dist/
-runner-implementacao/bin/
-runner-implementacao/dist/
-*.test
-coverage.out
-runner-implementacao/coverage.out
+# -----------------------------------------------------------------------------
+# Git ignore do repositório Runner
+# Mantido na raiz do repositório para valer para .github/, docs/ e runner-implementacao/.
+# -----------------------------------------------------------------------------
 
-# Java build outputs
-runner-implementacao/assinador/out/
-runner-implementacao/assinador/target/
+# Saídas de build/teste - NUNCA commitar
+/dist/
+**/dist/
+/target/
+**/target/
+/out/
+**/out/
+/bin/
+**/bin/
 *.class
+*.test
 
-# Generated examples / local outputs
+# Cobertura e relatórios locais
+coverage.out
+**/coverage.out
+coverage.html
+**/coverage.html
+
+# Artefatos empacotados localmente
+*.AppImage
+*.exe
+*.dmg
+*.jar
+*.zip
+*.tar.gz
+*.sig
+*.bundle
+*.p12
+
+# Exceção: arquivos de origem/documentação não são afetados pelas regras acima.
+# Certificados e JSONs gerados por testes devem ficar dentro de target/ ou examples/.
+
+# Saídas específicas do módulo Runner
+runner-implementacao/assinador/target/
+runner-implementacao/assinador/out/
+runner-implementacao/dist/
 runner-implementacao/examples/*.json
+runner-implementacao/examples/assinatura*.json
 runner-implementacao/release/
 
-# IDE / OS
+# Estado local do Runner/HubSaúde
+.hubsaude/
+*.log
+.cache/
+tmp/
+temp/
+
+# IDE / sistema operacional
 .idea/
 .vscode/
 .DS_Store
-
-# Runtime state
-.hubsaude/
-*.log
+Thumbs.db

@@ -84,6 +84,10 @@ func TestReleaseWorkflowIsAtRepositoryRootAndUsesModuleSubdirectory(t *testing.T
 	required := []string{
 		"working-directory: runner-implementacao",
 		"path: runner-implementacao/dist/*",
+		"path: runner-implementacao/dist",
+		"files: runner-implementacao/dist/*",
+		"fail_on_unmatched_files: true",
+		"merge-multiple: true",
 		"cache-dependency-path: runner-implementacao/go.mod",
 	}
 	for _, item := range required {
@@ -125,8 +129,7 @@ func TestReleaseWorkflowSignsArtifactsWithCosignOIDCAndTransparencyLog(t *testin
 }
 
 func TestReleaseDocumentationExplainsCosignVerification(t *testing.T) {
-	root := moduleRoot(t)
-	docPath := filepath.Join(root, "docs", "integridade-assinatura-artefatos.md")
+	docPath := filepath.Join(repositoryRoot(t), "docs", "integridade-assinatura-artefatos.md")
 	content, err := os.ReadFile(docPath)
 	if err != nil {
 		t.Fatalf("documento de integridade de artefatos não encontrado: %v", err)
@@ -146,6 +149,53 @@ func TestReleaseDocumentationExplainsCosignVerification(t *testing.T) {
 	for _, item := range required {
 		if !strings.Contains(doc, item) {
 			t.Fatalf("documentação de integridade não contém item obrigatório: %s", item)
+		}
+	}
+}
+
+func TestGeneratedBuildOutputsAreIgnoredAndChecked(t *testing.T) {
+	repo := repositoryRoot(t)
+
+	gitignorePath := filepath.Join(repo, ".gitignore")
+	gitignoreBytes, err := os.ReadFile(gitignorePath)
+	if err != nil {
+		t.Fatalf(".gitignore não encontrado na raiz do repositório: %v", err)
+	}
+	gitignore := string(gitignoreBytes)
+
+	requiredIgnore := []string{
+		"**/target/",
+		"**/out/",
+		"**/dist/",
+		"runner-implementacao/assinador/target/",
+		"runner-implementacao/assinador/out/",
+		"runner-implementacao/dist/",
+		"runner-implementacao/examples/*.json",
+	}
+	for _, item := range requiredIgnore {
+		if !strings.Contains(gitignore, item) {
+			t.Fatalf(".gitignore não protege saída gerada: %s", item)
+		}
+	}
+
+	checkScript := filepath.Join(moduleRoot(t), "scripts", "check-generated-files.sh")
+	content, err := os.ReadFile(checkScript)
+	if err != nil {
+		t.Fatalf("script check-generated-files.sh não encontrado: %v", err)
+	}
+	for _, item := range []string{"ls-files", "target", "out", "dist"} {
+		if !strings.Contains(string(content), item) {
+			t.Fatalf("script de verificação de gerados não contém item obrigatório: %s", item)
+		}
+	}
+
+	for _, workflowName := range []string{"build.yml", "release.yml"} {
+		workflow, err := os.ReadFile(filepath.Join(repo, ".github", "workflows", workflowName))
+		if err != nil {
+			t.Fatalf("workflow %s não encontrado: %v", workflowName, err)
+		}
+		if !strings.Contains(string(workflow), "./scripts/check-generated-files.sh") {
+			t.Fatalf("workflow %s não executa check-generated-files.sh", workflowName)
 		}
 	}
 }

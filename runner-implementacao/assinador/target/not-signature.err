@@ -1,1 +1,0 @@
-{"resourceType":"OperationOutcome","status":"ERROR","valid":false,"code":"USER_ERROR","message":"FORMAT.SIGNATURE-DATA-INVALID: arquivo contém OperationOutcome, não Signature.data","issue":[{"severity":"error","code":"USER_ERROR","diagnostics":"FORMAT.SIGNATURE-DATA-INVALID: arquivo contém OperationOutcome, não Signature.data"}]}

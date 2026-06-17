@@ -42,6 +42,10 @@ jobs:
             [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Tag deve seguir SemVer, exemplo v1.0.0"; exit 1; }
           fi
 
+      - name: Verificar arquivos gerados fora do Git
+        if: runner.os != 'Windows'
+        run: ./scripts/check-generated-files.sh
+
       - name: Rodar go vet
         run: go vet ./...
 
@@ -171,8 +175,15 @@ jobs:
       - name: Baixar artefatos compilados
         uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: runner-implementacao/dist
           merge-multiple: true
+
+      - name: Conferir artefatos antes da assinatura
+        run: |
+          set -euo pipefail
+          pwd
+          test -d runner-implementacao/dist
+          ls -la runner-implementacao/dist
 
       - name: Instalar Cosign
         uses: sigstore/cosign-installer@v3
@@ -182,7 +193,8 @@ jobs:
           COSIGN_EXPERIMENTAL: "1"
         run: |
           set -euo pipefail
-          cd dist
+          cd runner-implementacao/dist
+          test -n "$(find . -maxdepth 1 -type f -print -quit)"
           sha256sum * > checksums.txt
 
           # Arquivos primários distribuídos na release. Para cada artefato,
@@ -196,7 +208,13 @@ jobs:
               "$f"
           done
 
+      - name: Conferir artefatos antes da publicação
+        run: |
+          set -euo pipefail
+          ls -la runner-implementacao/dist
+
       - name: Publicar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: runner-implementacao/dist/*
+          fail_on_unmatched_files: true

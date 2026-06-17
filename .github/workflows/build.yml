@@ -40,6 +40,10 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Verificar arquivos gerados fora do Git
+        if: runner.os != 'Windows'
+        run: ./scripts/check-generated-files.sh
+
       - name: Rodar go vet
         run: go vet ./...
 
