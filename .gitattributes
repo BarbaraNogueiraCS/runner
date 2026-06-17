@@ -1,5 +1,36 @@
-* text=auto eol=lf
-*.bat text eol=crlf
+# Normaliza finais de linha para evitar diferenças entre Windows, Linux e macOS.
+* text=auto
+
+# Código, scripts e configuração usam LF.
 *.go text eol=lf
 *.java text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
 *.md text eol=lf
+Makefile text eol=lf
+
+# Scripts Windows podem usar CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binários e pacotes gerados.
+*.jar binary
+*.exe binary
+*.AppImage binary
+*.dmg binary
+*.zip binary
+*.tar.gz binary
+*.p12 binary
+*.sig binary
+*.bundle text eol=lf
+*.pem text eol=lf
+
+# Saídas geradas não contam como linguagem principal no GitHub quando existirem localmente.
+dist/** linguist-generated=true
+**/dist/** linguist-generated=true
+**/target/** linguist-generated=true
+**/out/** linguist-generated=true
+runner-implementacao/examples/*.json linguist-generated=true

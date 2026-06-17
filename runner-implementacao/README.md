@@ -45,6 +45,8 @@ Limitação assumida: a operação criptográfica real, OCSP, CRL, TSA real e PK
 runner/                         # raiz do repositório Git/GitHub
 ├── .github/workflows/           # GitHub Actions: build.yml e release.yml
 ├── .gitignore                   # regras de arquivos gerados/temporários
+├── .gitattributes               # normalização de finais de linha e binários
+├── docs/                        # documentação do projeto
 └── runner-implementacao/        # raiz do módulo Go e do código-fonte
     ├── cmd/
     │   ├── assinatura/
@@ -61,11 +63,10 @@ runner/                         # raiz do repositório Git/GitHub
     ├── assinador/
     │   ├── Makefile
     │   └── src/
-    ├── docs/adr/
     └── examples/
 ```
 
-A pasta `.github` e o arquivo `.gitignore` ficam na raiz do repositório porque o GitHub Actions só reconhece workflows em `.github/workflows` a partir da raiz do repositório Git. Como o código está em `runner-implementacao`, os workflows usam `working-directory: runner-implementacao`.
+A pasta `.github`, o arquivo `.gitignore`, o arquivo `.gitattributes` e a pasta `docs` ficam na raiz do repositório. O GitHub Actions reconhece workflows em `.github/workflows` a partir da raiz do repositório Git. Como o código está em `runner-implementacao`, os workflows usam `working-directory: runner-implementacao`.
 
 ## 5. Pré-requisitos
 
@@ -348,4 +349,4 @@ O workflow também gera `checksums.txt` e assina todos os artefatos com Cosign e
 
 ## Artefatos executáveis de release
 
-A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`docs/artefatos-executaveis.md`](docs/artefatos-executaveis.md). A política de integridade, os arquivos obrigatórios `<artefato>.sig` e `<artefato>.pem`, o uso de OIDC/transparency log e os comandos de verificação estão em [`docs/integridade-assinatura-artefatos.md`](docs/integridade-assinatura-artefatos.md). O workflow responsável é `.github/workflows/release.yml` na raiz do repositório Git. Como o módulo Go está em `runner-implementacao`, o workflow usa `working-directory: runner-implementacao`.
+A geração dos binários de Windows, Linux e macOS, os checksums SHA256, a assinatura Cosign e a publicação no GitHub Releases estão documentados em [`../docs/artefatos-executaveis.md`](../docs/artefatos-executaveis.md). A política de integridade, os arquivos obrigatórios `<artefato>.sig` e `<artefato>.pem`, o uso de OIDC/transparency log e os comandos de verificação estão em [`../docs/integridade-assinatura-artefatos.md`](../docs/integridade-assinatura-artefatos.md). O workflow responsável é `.github/workflows/release.yml` na raiz do repositório Git. Como o módulo Go está em `runner-implementacao`, o workflow usa `working-directory: runner-implementacao`.
