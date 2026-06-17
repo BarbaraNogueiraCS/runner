@@ -1,1 +1,0 @@
-{"resourceType":"OperationOutcome","status":"ERROR","valid":false,"code":"USER_ERROR","message":"CRYPTO.PIN-REQUIRED: PIN obrigatório para SMARTCARD/TOKEN","issue":[{"severity":"error","code":"USER_ERROR","diagnostics":"CRYPTO.PIN-REQUIRED: PIN obrigatório para SMARTCARD/TOKEN"}]}

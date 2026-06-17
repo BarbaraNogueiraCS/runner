@@ -1,1 +1,0 @@
-{"resourceType":"OperationOutcome","status":"ERROR","valid":false,"code":"USER_ERROR","message":"FORMAT.PROVENANCE-TARGET-NOT-FOUND: referência não existe em Bundle.entry.fullUrl","issue":[{"severity":"error","code":"USER_ERROR","diagnostics":"FORMAT.PROVENANCE-TARGET-NOT-FOUND: referência não existe em Bundle.entry.fullUrl"}]}

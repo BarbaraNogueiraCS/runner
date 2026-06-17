@@ -43,12 +43,15 @@ Implementados em Go e Java:
 - Invocação local falha bem quando o JAR não é informado: `internal/assinador/acceptance_test.go`.
 - Gerenciador do Simulador consulta `/api/info`, para via `/shutdown`, reutiliza instância ativa e rejeita porta ocupada não identificada como simulador: `internal/simulador/client_test.go` e `internal/simulador/acceptance_test.go`.
 - Download dinâmico e reuso de versão local do artefato: `internal/release/manifest_test.go`.
+- Garantia de que `target/`, `out/`, `dist/` e JSONs gerados não sejam versionados: `scripts/check-generated-files.sh` e `internal/release/artifacts_acceptance_test.go`.
 
 ## Como executar
 
 ```bash
 go test ./...
 go vet ./...
+./scripts/check-generated-files.sh
+./scripts/check-release-artifacts.sh
 
 cd assinador
 make clean all test

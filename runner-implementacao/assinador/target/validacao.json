@@ -1,1 +1,0 @@
-{"resourceType":"OperationOutcome","status":"SUCCESS","valid":true,"issue":[{"severity":"information","code":"VALIDATION.OK","diagnostics":"Assinatura simulada validada conforme estrutura JWS JSON Serialization e FHIR Signature"}]}

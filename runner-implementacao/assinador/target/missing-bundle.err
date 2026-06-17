@@ -1,1 +1,0 @@
-{"resourceType":"OperationOutcome","status":"ERROR","valid":false,"code":"USER_ERROR","message":"INPUT.MISSING-PARAMETER: informe --bundle","issue":[{"severity":"error","code":"USER_ERROR","diagnostics":"INPUT.MISSING-PARAMETER: informe --bundle"}]}
