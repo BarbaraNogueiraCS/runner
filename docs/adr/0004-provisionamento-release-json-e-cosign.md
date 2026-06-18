@@ -6,7 +6,7 @@ O Runner precisa executar aplicações Java sem exigir que o usuário conheça d
 
 ## Decisão
 
-1. O Runner usa `https://raw.githubusercontent.com/kyriosdata/runner/main/release.json` como manifesto remoto padrão.
+1. O Runner usa `https://raw.githubusercontent.com/BarbaraNogueiraCS/runner/main/runner-implementacao/release.json` como manifesto remoto padrão.
 2. O CLI compara a versão do artefato remoto com a versão local em `~/.hubsaude/<artefato>/*.version`.
 3. O download é feito apenas quando o artefato não existe, está desatualizado ou possui checksum SHA256 divergente.
 4. O Java é procurado em `RUNNER_JAVA`, `~/.hubsaude/jdk/bin/java` e no `PATH`; se Java 21+ não estiver disponível, o Runner baixa o runtime Temurin indicado no manifesto.

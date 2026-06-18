@@ -57,8 +57,8 @@ Para gerar release no GitHub, faça a tag a partir da `main`:
 ```bash
 git checkout main
 git pull origin main
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
 O workflow de release gera binários, checksums e assinaturas Cosign (`.sig`, `.pem` e `.bundle`) e publica tudo em GitHub Releases. A documentação fica em `docs/`, também na raiz do repositório.

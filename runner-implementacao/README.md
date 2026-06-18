@@ -269,7 +269,7 @@ go run ./cmd/simulador start --url https://localhost:8443 --insecure
 Por padrão, o arquivo de manifesto usado é:
 
 ```text
-https://raw.githubusercontent.com/kyriosdata/runner/main/release.json
+https://raw.githubusercontent.com/BarbaraNogueiraCS/runner/main/runner-implementacao/release.json
 ```
 
 Também é possível indicar explicitamente o artefato desejado do manifesto:

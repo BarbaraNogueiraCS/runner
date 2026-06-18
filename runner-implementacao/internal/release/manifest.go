@@ -21,7 +21,7 @@ import (
 	"github.com/kyriosdata/runner/internal/paths"
 )
 
-const DefaultManifestURL = "https://raw.githubusercontent.com/kyriosdata/runner/main/release.json"
+const DefaultManifestURL = "https://raw.githubusercontent.com/BarbaraNogueiraCS/runner/main/runner-implementacao/release.json"
 
 type Artifact struct {
 	URL     string `json:"url"`
