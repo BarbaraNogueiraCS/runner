@@ -2,6 +2,23 @@
 
 Este documento registra a rastreabilidade entre os critérios solicitados e os pontos de implementação no código.
 
+## 0. Sprint 1 — Fundação e Entrega Contínua
+
+| Critério | Implementação |
+|---|---|
+| CLI Go estruturado | `runner-implementacao/go.mod`, `cmd/assinatura`, `cmd/simulador`, `internal/*` |
+| Identidade do módulo | `module github.com/BarbaraNogueiraCS/runner` |
+| CLI com Cobra | `cmd/assinatura/main.go` e `cmd/simulador/main.go` usam `github.com/spf13/cobra` |
+| `assinatura version` | subcomando `version` do Cobra em `cmd/assinatura/main.go` |
+| Build multiplataforma em CI | `.github/workflows/build.yml` com `GOOS=linux/windows/darwin` e `GOARCH=amd64` |
+| Artifacts do workflow | `actions/upload-artifact@v4` com `runner-dev-binaries` |
+| Release SemVer | `.github/workflows/release.yml` com tags `vMAJOR.MINOR.PATCH` |
+| GitHub Releases | `softprops/action-gh-release@v2` |
+| Nomes de artefatos | `assinatura-<versão>-<os>-<arch>` e `simulador-<versão>-<os>-<arch>` |
+| Checksums SHA256 | `sha256sum * > checksums.txt` |
+| Cosign OIDC + transparency log | `sigstore/cosign-installer@v3`, `id-token: write`, `--tlog-upload=true` |
+| Documentação de verificação | `docs/integridade-assinatura-artefatos.md` e `docs/sprint1-fundacao-entrega-continua.md` |
+
 ## 1. CLI `assinatura` e invocação do `assinador.jar`
 
 | Critério | Implementação |

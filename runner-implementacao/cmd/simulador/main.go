@@ -8,6 +8,7 @@ import (
 
 	"github.com/BarbaraNogueiraCS/runner/internal/apperrors"
 	"github.com/BarbaraNogueiraCS/runner/internal/simulador"
+	"github.com/spf13/cobra"
 )
 
 var version = "dev"
@@ -17,27 +18,77 @@ type flags map[string]string
 func main() { os.Exit(run(os.Args[1:])) }
 
 func run(args []string) int {
-	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		usage()
-		return apperrors.OK
-	}
-	switch args[0] {
-	case "version", "--version", "-v":
-		fmt.Println(version)
-		return apperrors.OK
-	case "status":
-		return status(args[1:])
-	case "info":
-		return info(args[1:])
-	case "stop":
-		return stop(args[1:])
-	case "start":
-		return start(args[1:])
-	default:
-		fmt.Fprintf(os.Stderr, "Comando desconhecido: %s\n\n", args[0])
-		usage()
+	exitCode := apperrors.OK
+	root := newRootCommand(&exitCode)
+	root.SetArgs(args)
+	if err := root.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
+	return exitCode
+}
+
+func newRootCommand(exitCode *int) *cobra.Command {
+	root := &cobra.Command{
+		Use:           "simulador",
+		Short:         "Sistema Runner - CLI do Simulador HubSaúde",
+		Version:       version,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			usage()
+			*exitCode = apperrors.OK
+		},
+	}
+	root.SetVersionTemplate("{{.Version}}\n")
+
+	root.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Exibe a versão atual do CLI",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Fprintln(cmd.OutOrStdout(), version)
+			*exitCode = apperrors.OK
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "status",
+		Short:              "Consulta o status do Simulador HubSaúde",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = status(args)
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "info",
+		Short:              "Consulta informações do Simulador HubSaúde",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = info(args)
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "stop",
+		Short:              "Solicita encerramento do Simulador HubSaúde",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = stop(args)
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "start",
+		Short:              "Inicia ou reaproveita o Simulador HubSaúde",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = start(args)
+		},
+	})
+
+	return root
 }
 
 func status(args []string) int {

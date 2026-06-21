@@ -34,6 +34,9 @@ jobs:
           go-version: '1.23.2'
           cache-dependency-path: runner-implementacao/go.mod
 
+      - name: Baixar dependências Go
+        run: go mod download
+
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
@@ -74,6 +77,9 @@ jobs:
         with:
           go-version: '1.23.2'
           cache-dependency-path: runner-implementacao/go.mod
+
+      - name: Baixar dependências Go
+        run: go mod download
 
       - name: Compilar CLIs para validação
         run: |
