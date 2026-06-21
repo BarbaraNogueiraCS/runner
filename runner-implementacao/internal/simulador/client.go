@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyriosdata/runner/internal/httpx"
-	"github.com/kyriosdata/runner/internal/jdk"
-	"github.com/kyriosdata/runner/internal/netutil"
-	"github.com/kyriosdata/runner/internal/paths"
-	"github.com/kyriosdata/runner/internal/process"
-	"github.com/kyriosdata/runner/internal/release"
+	"github.com/BarbaraNogueiraCS/runner/internal/httpx"
+	"github.com/BarbaraNogueiraCS/runner/internal/jdk"
+	"github.com/BarbaraNogueiraCS/runner/internal/netutil"
+	"github.com/BarbaraNogueiraCS/runner/internal/paths"
+	"github.com/BarbaraNogueiraCS/runner/internal/process"
+	"github.com/BarbaraNogueiraCS/runner/internal/release"
 )
 
 const DefaultURL = "https://localhost:8443"

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kyriosdata/runner/internal/apperrors"
-	"github.com/kyriosdata/runner/internal/assinador"
+	"github.com/BarbaraNogueiraCS/runner/internal/apperrors"
+	"github.com/BarbaraNogueiraCS/runner/internal/assinador"
 )
 
 var version = "dev"

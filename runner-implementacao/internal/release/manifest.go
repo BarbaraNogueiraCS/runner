@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyriosdata/runner/internal/paths"
+	"github.com/BarbaraNogueiraCS/runner/internal/paths"
 )
 
 const DefaultManifestURL = "https://raw.githubusercontent.com/BarbaraNogueiraCS/runner/main/runner-implementacao/release.json"

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kyriosdata/runner/internal/paths"
+	"github.com/BarbaraNogueiraCS/runner/internal/paths"
 )
 
 type State struct {
