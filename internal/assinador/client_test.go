@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -111,5 +112,19 @@ func TestWriteOutputWritesFile(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), fmt.Sprintf("Resultado gravado em %s", path)) {
 		t.Fatalf("mensagem legível esperada, obtida: %s", stdout.String())
+	}
+}
+
+func TestSprint2RunLocalRejectsMissingJarBeforeJavaProvisioning(t *testing.T) {
+	client := New(DefaultPort, filepath.Join(t.TempDir(), "assinador-inexistente.jar"))
+	_, stderr, code, err := client.SignLocal(SignRequest{Input: "documento.txt", Signer: "Teste"})
+	if err == nil {
+		t.Fatalf("SignLocal deveria falhar quando o jar não existe")
+	}
+	if code != 2 {
+		t.Fatalf("código esperado 2, obtido %d", code)
+	}
+	if !strings.Contains(string(stderr), "assinador.jar não encontrado") {
+		t.Fatalf("mensagem deveria orientar sobre jar ausente, obtida: %s", string(stderr))
 	}
 }

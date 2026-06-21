@@ -231,10 +231,15 @@ func (c Client) runLocal(args []string) ([]byte, []byte, int, error) {
 	if c.JarPath == "" {
 		return nil, []byte("assinador.jar não informado. Use --jar ou RUNNER_ASSINADOR_JAR\n"), 2, errors.New("jar ausente")
 	}
+	if _, err := os.Stat(c.JarPath); err != nil {
+		msg := fmt.Sprintf("assinador.jar não encontrado em %s. Gere com 'make java-test' ou informe --jar com o caminho correto.\n", c.JarPath)
+		return nil, []byte(msg), 2, fmt.Errorf("assinador.jar não encontrado: %w", err)
+	}
 	java, err := jdk.EnsureJava21(context.Background(), c.ManifestURL)
 	if err != nil {
 		return nil, []byte(err.Error() + "\n"), 2, err
 	}
+	// Invocação local equivalente a: java -jar assinador.jar <comando> <flags>
 	allArgs := append([]string{"-jar", c.JarPath}, args...)
 	cmd := exec.Command(java, allArgs...)
 	var stdout bytes.Buffer

@@ -96,8 +96,12 @@ func managedJavaPath() string {
 	if err != nil {
 		return ""
 	}
+	return ManagedJavaPathFor(home, runtime.GOOS)
+}
+
+func ManagedJavaPathFor(home, goos string) string {
 	name := "java"
-	if runtime.GOOS == "windows" {
+	if goos == "windows" {
 		name = "java.exe"
 	}
 	return filepath.Join(home, ".hubsaude", "jdk", "bin", name)

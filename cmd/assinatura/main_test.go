@@ -23,3 +23,21 @@ func TestParseFlagsAcceptsEqualsSyntax(t *testing.T) {
 		t.Fatalf("flags parseadas incorretamente: %#v", f)
 	}
 }
+
+func TestSprint2HelpCommandsReturnOK(t *testing.T) {
+	for _, args := range [][]string{
+		{"sign", "--help"},
+		{"validate", "--help"},
+		{"server", "--help"},
+	} {
+		if code := run(args); code != 0 {
+			t.Fatalf("%v deveria retornar 0, obtido %d", args, code)
+		}
+	}
+}
+
+func TestSprint2UnknownFlagIsRejected(t *testing.T) {
+	if code := run([]string{"sign", "--flag-inexistente", "x"}); code == 0 {
+		t.Fatalf("flag desconhecida deveria retornar erro")
+	}
+}

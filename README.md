@@ -1,65 +1,64 @@
 # Runner
 
-Este repositório usa a estrutura:
+Sistema Runner com estrutura de projeto Go na raiz do repositório. Esta organização evita a pasta intermediária a raiz do repositório e deixa o projeto no formato mais comum para aplicações Go com CLI.
 
 ```text
 runner/
-├── .github/workflows/        # GitHub Actions na raiz do repositório
-├── .gitignore                # regras para não versionar saídas geradas
-├── .gitattributes            # normalização de finais de linha
-├── docs/                     # documentação do projeto na raiz
-└── runner-implementacao/     # código-fonte, go.mod, scripts e assinador Java
+├── go.mod
+├── go.sum
+├── Makefile
+├── cmd/
+│   ├── assinatura/
+│   └── simulador/
+├── internal/
+├── assinador/
+├── scripts/
+├── examples/
+├── docs/
+├── projetos/
+├── .github/
+├── .gitignore
+├── .gitattributes
+└── README.md
 ```
 
-A pasta `.github` precisa ficar na raiz para que o GitHub Actions reconheça os workflows `build.yml` e `release.yml`. Como o código está em `runner-implementacao`, os workflows usam `working-directory: runner-implementacao`.
+## Visão geral
 
-## Arquivos que não devem ser commitados
+O projeto entrega:
 
-As pastas abaixo são geradas por build, teste ou execução local e não devem ser versionadas:
+- `assinatura`: CLI em Go para criar e validar assinaturas digitais simuladas.
+- `simulador`: CLI em Go para consultar, iniciar e parar o Simulador do HubSaúde.
+- `assinador.jar`: componente Java 21 que valida parâmetros, simula assinatura, simula validação e pode ser invocado localmente pelo CLI.
+- GitHub Actions para CI, build multiplataforma, GitHub Releases, checksums SHA256 e assinatura Cosign.
 
-```text
-runner-implementacao/assinador/target/
-runner-implementacao/assinador/out/
-runner-implementacao/dist/
-runner-implementacao/examples/*.json
-```
+O Simulador do HubSaúde é tratado como sistema externo. O comando `simulador` gerencia/consulta esse serviço, normalmente em `https://localhost:8443/`.
 
-O `.gitignore` da raiz protege esses caminhos. Antes de commitar, execute:
+## Pré-requisitos locais
+
+No Ubuntu 20.04 ou superior:
 
 ```bash
-cd runner-implementacao
-./scripts/check-generated-files.sh
+sudo apt update
+sudo apt install -y git make
 ```
 
-Se algum arquivo gerado já tiver sido adicionado ao Git por engano, remova apenas do índice, mantendo-o no computador:
+Verifique Go e Java:
 
 ```bash
-git rm -r --cached runner-implementacao/assinador/target || true
-git rm -r --cached runner-implementacao/assinador/out || true
-git rm -r --cached runner-implementacao/dist || true
-git rm -r --cached runner-implementacao/examples/*.json || true
+go version
+java -version
+javac -version
+keytool -help >/dev/null
 ```
 
-## Execução local rápida
+O projeto usa Go 1.23.2 e Java 21.
 
-A automação local fica no `runner-implementacao/Makefile`. Ele evita repetir manualmente comandos como `go mod download`, `go test`, `go vet` e `go build`.
+## Automação local
 
-```bash
-cd runner-implementacao
-make deps
-make test
-make vet
-make cover
-make check
-make java-test
-make build
-```
-
-Para executar o fluxo local completo de uma vez:
+A automação fica no `Makefile` da raiz:
 
 ```bash
-cd runner-implementacao
-make all
+make help
 ```
 
 Principais alvos:
@@ -73,36 +72,121 @@ make cover      roda go test -cover ./...
 make check      valida higiene do repositório e artefatos de release
 make build      compila dist/assinatura e dist/simulador
 make java-test  compila e testa o assinador.jar
+make samples    gera arquivos de exemplo em assinador/target/
 make clean      remove dist/, assinador/out/, assinador/target/ e examples/*.json
 make all        executa deps, test, vet, cover, check, java-test e build
 ```
 
-## Release
-
-Para gerar release no GitHub, faça a tag a partir da `main`:
+Fluxo local recomendado:
 
 ```bash
-git checkout main
-git pull origin main
+make deps
+make test
+make vet
+make cover
+make check
+make java-test
+make samples
+make build
+```
+
+Ou tudo de uma vez:
+
+```bash
+make all
+```
+
+## Arquivos que não devem ser commitados
+
+As pastas abaixo são geradas por build, teste ou execução local e não devem ser versionadas:
+
+```text
+assinador/target/
+assinador/out/
+dist/
+examples/*.json
+```
+
+Antes de commitar, rode:
+
+```bash
+make check
+```
+
+Se algum arquivo gerado já tiver sido adicionado ao Git por engano, remova do índice, sem apagar necessariamente o arquivo local:
+
+```bash
+git rm -r --cached --ignore-unmatch assinador/target
+git rm -r --cached --ignore-unmatch assinador/out
+git rm -r --cached --ignore-unmatch dist
+git rm --cached --ignore-unmatch examples/*.json
+```
+
+## Assinatura local
+
+Gere o `assinador.jar` e os arquivos de exemplo:
+
+```bash
+make java-test
+make samples
+make build
+```
+
+Assine localmente:
+
+```bash
+TS=$(date -u +%s)
+POLICY='https://fhir.saude.go.gov.br/r4/seguranca/ImplementationGuide/br.go.ses.seguranca|0.1.2'
+mkdir -p examples
+
+./dist/assinatura sign \
+  --local \
+  --jar assinador/target/assinador.jar \
+  --bundle assinador/target/bundle.json \
+  --provenance assinador/target/provenance.json \
+  --crypto-material assinador/target/crypto.json \
+  --cert-chain assinador/target/certs.json \
+  --timestamp "$TS" \
+  --policy "$POLICY" \
+  --config assinador/target/config.json \
+  --signer "Maria Runner" \
+  --output examples/assinatura-local.json
+```
+
+Valide localmente:
+
+```bash
+./dist/assinatura validate \
+  --local \
+  --jar assinador/target/assinador.jar \
+  --signature examples/assinatura-local.json \
+  --timestamp "$TS" \
+  --policy "$POLICY" \
+  --bundle assinador/target/bundle.json \
+  --provenance assinador/target/provenance.json \
+  --config assinador/target/config.json
+```
+
+## GitHub Actions e release
+
+Os workflows ficam em `.github/workflows/` na raiz:
+
+- `build.yml`: roda em `main`, `develop`, `feature/**` e pull requests.
+- `release.yml`: roda quando uma tag SemVer, por exemplo `v1.0.5`, é enviada.
+
+Como sua release atual é `v1.0.4`, a próxima versão desta refatoração deve ser:
+
+```bash
 git tag v1.0.5
 git push origin v1.0.5
 ```
 
-O workflow de release gera binários, checksums e assinaturas Cosign (`.sig`, `.pem` e `.bundle`) e publica tudo em GitHub Releases. A documentação fica em `docs/`, também na raiz do repositório.
+A release publica binários multiplataforma, `checksums.txt` e assinaturas Cosign (`.sig`, `.pem` e `.bundle`).
 
+## Documentação
 
-## Sprint 1 — Fundação e Entrega Contínua
-
-A Sprint 1 está rastreada em `docs/sprint1-fundacao-entrega-continua.md`. O CLI usa Cobra (`github.com/spf13/cobra`) e mantém a identidade do repositório no módulo Go:
-
-```go
-module github.com/BarbaraNogueiraCS/runner
-```
-
-Para instalar a ferramenta de scaffolding do Cobra em ambiente de desenvolvimento:
-
-```bash
-go install github.com/spf13/cobra-cli@latest
-```
-
-O usuário final não precisa instalar `cobra-cli`; os binários são gerados e publicados automaticamente pelo GitHub Actions em GitHub Releases.
+- `docs/sprint1-fundacao-entrega-continua.md`
+- `docs/sprint2-assinatura-digital-local.md`
+- `docs/integridade-assinatura-artefatos.md`
+- `docs/higiene-repositorio.md`
+- `docs/implementacao.md`
