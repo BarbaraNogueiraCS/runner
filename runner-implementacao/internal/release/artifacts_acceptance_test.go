@@ -199,3 +199,93 @@ func TestGeneratedBuildOutputsAreIgnoredAndChecked(t *testing.T) {
 		}
 	}
 }
+
+func TestSprint1CLIUsesRepositoryIdentityAndCobra(t *testing.T) {
+	moduleBytes, err := os.ReadFile(filepath.Join(moduleRoot(t), "go.mod"))
+	if err != nil {
+		t.Fatalf("go.mod não encontrado: %v", err)
+	}
+	module := string(moduleBytes)
+	for _, item := range []string{
+		"module github.com/BarbaraNogueiraCS/runner",
+		"github.com/spf13/cobra",
+	} {
+		if !strings.Contains(module, item) {
+			t.Fatalf("go.mod não contém requisito da Sprint 1: %s", item)
+		}
+	}
+
+	for _, path := range []string{
+		filepath.Join(moduleRoot(t), "cmd", "assinatura", "main.go"),
+		filepath.Join(moduleRoot(t), "cmd", "simulador", "main.go"),
+	} {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("arquivo CLI não encontrado %s: %v", path, err)
+		}
+		text := string(content)
+		for _, item := range []string{"github.com/spf13/cobra", "Use:", "version", "SetVersionTemplate"} {
+			if !strings.Contains(text, item) {
+				t.Fatalf("%s não evidencia uso do Cobra/version: %s", path, item)
+			}
+		}
+	}
+}
+
+func TestSprint1BuildWorkflowProducesMultiplatformArtifactsOnPush(t *testing.T) {
+	repo := repositoryRoot(t)
+	workflowPath := filepath.Join(repo, ".github", "workflows", "build.yml")
+	content, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("build.yml não encontrado: %v", err)
+	}
+	workflow := string(content)
+	for _, item := range []string{
+		"push:",
+		"main",
+		"GOOS=linux GOARCH=amd64",
+		"GOOS=windows GOARCH=amd64",
+		"GOOS=darwin GOARCH=amd64",
+		"actions/upload-artifact@v4",
+		"runner-dev-binaries",
+		"assinatura-linux-amd64.AppImage",
+		"assinatura-windows-amd64.exe",
+		"assinatura-macos-amd64",
+	} {
+		if !strings.Contains(workflow, item) {
+			t.Fatalf("build.yml não contém requisito da Sprint 1 CI/CD: %s", item)
+		}
+	}
+}
+
+func TestSprint1DocumentationCoversAcceptanceCriteria(t *testing.T) {
+	docPath := filepath.Join(repositoryRoot(t), "docs", "sprint1-fundacao-entrega-continua.md")
+	content, err := os.ReadFile(docPath)
+	if err != nil {
+		t.Fatalf("documento de rastreabilidade da Sprint 1 não encontrado: %v", err)
+	}
+	doc := string(content)
+	for _, item := range []string{
+		"US-01.1",
+		"Cobra",
+		"assinatura version",
+		"Windows",
+		"Linux",
+		"macOS",
+		"US-05.1",
+		"GitHub Actions",
+		"artifacts do workflow",
+		"US-05.2",
+		"SemVer",
+		"GitHub Releases",
+		"assinatura-<versão>-<os>-<arch>",
+		"US-05.3",
+		"checksums SHA256",
+		"Cosign",
+		"cosign verify-blob",
+	} {
+		if !strings.Contains(doc, item) {
+			t.Fatalf("documentação da Sprint 1 não contém requisito: %s", item)
+		}
+	}
+}

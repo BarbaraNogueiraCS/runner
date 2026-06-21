@@ -28,12 +28,18 @@ fi
 WORKFLOW="$REPO_ROOT/.github/workflows/release.yml"
 BUILD_WORKFLOW="$REPO_ROOT/.github/workflows/build.yml"
 DOC="$REPO_ROOT/docs/integridade-assinatura-artefatos.md"
+SPRINT1_DOC="$REPO_ROOT/docs/sprint1-fundacao-entrega-continua.md"
 GITIGNORE="$REPO_ROOT/.gitignore"
 GITATTRIBUTES="$REPO_ROOT/.gitattributes"
 GENERATED_CHECK="$MODULE_ROOT/scripts/check-generated-files.sh"
 
 if [[ ! -f "$DOC" ]]; then
   echo "ERRO: documento de integridade de artefatos não encontrado: $DOC" >&2
+  exit 1
+fi
+
+if [[ ! -f "$SPRINT1_DOC" ]]; then
+  echo "ERRO: documento de rastreabilidade da Sprint 1 não encontrado: $SPRINT1_DOC" >&2
   exit 1
 fi
 
@@ -106,6 +112,11 @@ if [[ -f "$BUILD_WORKFLOW" ]]; then
     "feature/**"
     "go test ./..."
     "go vet ./..."
+    "GOOS=linux GOARCH=amd64"
+    "GOOS=windows GOARCH=amd64"
+    "GOOS=darwin GOARCH=amd64"
+    "actions/upload-artifact@v4"
+    "runner-dev-binaries"
   )
   for pattern in "${required_build_patterns[@]}"; do
     if ! grep -Fq -- "$pattern" "$BUILD_WORKFLOW"; then
@@ -153,4 +164,37 @@ for pattern in "${required_doc_patterns[@]}"; do
   fi
 done
 
-echo "OK: .github, docs, .gitignore e .gitattributes estão na raiz; arquivos gerados não são versionados; workflows usam runner-implementacao; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem."
+required_sprint_doc_patterns=(
+  "US-01.1"
+  "Cobra"
+  "assinatura version"
+  "US-05.1"
+  "GitHub Actions"
+  "artifacts do workflow"
+  "US-05.2"
+  "SemVer"
+  "assinatura-<versão>-<os>-<arch>"
+  "US-05.3"
+  "checksums SHA256"
+  "Cosign"
+  "cosign verify-blob"
+)
+
+for pattern in "${required_sprint_doc_patterns[@]}"; do
+  if ! grep -Fq -- "$pattern" "$SPRINT1_DOC"; then
+    echo "ERRO: padrão ausente na documentação da Sprint 1: $pattern" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq -- "github.com/spf13/cobra" "$MODULE_ROOT/go.mod"; then
+  echo "ERRO: go.mod não declara dependência github.com/spf13/cobra." >&2
+  exit 1
+fi
+
+if ! grep -Fq -- "module github.com/BarbaraNogueiraCS/runner" "$MODULE_ROOT/go.mod"; then
+  echo "ERRO: go.mod não está com a identidade do repositório BarbaraNogueiraCS/runner." >&2
+  exit 1
+fi
+
+echo "OK: Sprint 1 coberta; .github, docs, .gitignore e .gitattributes estão na raiz; arquivos gerados não são versionados; workflows usam runner-implementacao; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem."
