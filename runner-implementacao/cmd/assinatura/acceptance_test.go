@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/kyriosdata/runner/internal/apperrors"
+	"github.com/BarbaraNogueiraCS/runner/internal/apperrors"
 )
 
 func TestAcceptanceSignCommandRequiresGuideParametersOrLegacyInput(t *testing.T) {
