@@ -97,6 +97,31 @@ Resultado esperado:
 Verified OK
 ```
 
+
+## Automação local de dependências, testes e build
+
+Além dos workflows do GitHub Actions, a implementação inclui o arquivo:
+
+```text
+runner-implementacao/Makefile
+```
+
+Ele automatiza os comandos locais mais repetidos:
+
+```text
+make deps       -> go mod download
+make tidy       -> go mod tidy
+make test       -> go test ./...
+make vet        -> go vet ./...
+make cover      -> go test -cover ./...
+make check      -> check-generated-files.sh e check-release-artifacts.sh
+make build      -> compila dist/assinatura e dist/simulador
+make java-test  -> compila e testa assinador.jar
+make all        -> executa o fluxo local completo
+```
+
+O GitHub Actions continua baixando dependências com `go mod download` em ambiente limpo. O Makefile facilita a execução local, sem substituir o pipeline de CI/CD.
+
 ## Resumo de entrega da Sprint 1
 
 A Sprint 1 está coberta por código, workflow e documentação:

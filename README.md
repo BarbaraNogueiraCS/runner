@@ -42,12 +42,39 @@ git rm -r --cached runner-implementacao/examples/*.json || true
 
 ## Execução local rápida
 
+A automação local fica no `runner-implementacao/Makefile`. Ele evita repetir manualmente comandos como `go mod download`, `go test`, `go vet` e `go build`.
+
 ```bash
 cd runner-implementacao
-go test ./...
-go vet ./...
-./scripts/check-release-artifacts.sh
-cd assinador && make clean all test && cd ..
+make deps
+make test
+make vet
+make cover
+make check
+make java-test
+make build
+```
+
+Para executar o fluxo local completo de uma vez:
+
+```bash
+cd runner-implementacao
+make all
+```
+
+Principais alvos:
+
+```text
+make deps       baixa dependências Go com go mod download
+make tidy       organiza go.mod e go.sum com go mod tidy
+make test       roda go test ./...
+make vet        roda go vet ./...
+make cover      roda go test -cover ./...
+make check      valida higiene do repositório e artefatos de release
+make build      compila dist/assinatura e dist/simulador
+make java-test  compila e testa o assinador.jar
+make clean      remove dist/, assinador/out/, assinador/target/ e examples/*.json
+make all        executa deps, test, vet, cover, check, java-test e build
 ```
 
 ## Release
