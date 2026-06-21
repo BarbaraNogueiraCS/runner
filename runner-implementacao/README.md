@@ -88,48 +88,83 @@ keytool -help >/dev/null
 
 O `keytool` vem com o JDK e é usado pelo `make test` para gerar um certificado de teste.
 
-## 6. Build
+## 6. Automação local com Makefile
+
+A raiz deste módulo contém um `Makefile` para automatizar o download das dependências, testes, verificações e build local.
+
+```bash
+make help
+```
+
+Resultado esperado: lista dos alvos disponíveis.
+
+Prepare as dependências Go:
+
+```bash
+make deps
+```
+
+Esse alvo executa `go mod download`. Resultado esperado: nenhuma saída ou apenas mensagens de download, sem erro.
+
+Quando você adicionar ou remover dependências/imports, organize `go.mod` e `go.sum`:
+
+```bash
+make tidy
+```
+
+Esse alvo executa `go mod tidy`. Resultado esperado: nenhuma saída ou mensagens de download das dependências indiretas, sem erro.
 
 Compile os CLIs:
 
 ```bash
-go build ./...
-go build -o dist/assinatura ./cmd/assinatura
-go build -o dist/simulador ./cmd/simulador
+make build
 ```
 
-Compile o `assinador.jar`:
+Resultado esperado: criação de `dist/assinatura` e `dist/simulador`.
+
+Compile e teste o `assinador.jar`:
 
 ```bash
-cd assinador
+make java-test
+```
+
+Resultado esperado: `Testes locais do assinador.jar passaram.`
+
+Para executar o fluxo local completo antes de commitar:
+
+```bash
 make all
-cd ..
 ```
 
-O artefato será gerado em:
-
-```text
-assinador/target/assinador.jar
-```
+Esse alvo executa `deps`, `test`, `vet`, `cover`, `check`, `java-test` e `build`.
 
 ## 7. Testes
 
 Execute os testes Go:
 
 ```bash
-go test ./...
-go vet ./...
+make test
 ```
 
-Execute o teste local do Java:
+Execute a verificação estática:
 
 ```bash
-cd assinador
-make clean all test
-cd ..
+make vet
 ```
 
-O `make test` gera arquivos de amostra em `assinador/target/`, cria uma assinatura FHIR `Signature` e valida o resultado.
+Execute a cobertura:
+
+```bash
+make cover
+```
+
+Execute as verificações de higiene do repositório e release:
+
+```bash
+make check
+```
+
+O alvo `make java-test` gera arquivos de amostra em `assinador/target/`, cria uma assinatura FHIR `Signature` e valida o resultado. As pastas `target/`, `out/` e `dist/` são saídas locais e não devem ser versionadas.
 
 ## 8. Uso do CLI assinatura conforme guia SES-GO
 
