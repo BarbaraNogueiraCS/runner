@@ -18,6 +18,7 @@ jobs:
   test:
     name: Testar código em ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -28,7 +29,7 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
+          go-version-file: go.mod
           cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
@@ -69,7 +70,7 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
+          go-version-file: go.mod
           cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
