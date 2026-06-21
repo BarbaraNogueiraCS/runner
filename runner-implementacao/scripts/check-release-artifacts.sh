@@ -32,6 +32,7 @@ SPRINT1_DOC="$REPO_ROOT/docs/sprint1-fundacao-entrega-continua.md"
 GITIGNORE="$REPO_ROOT/.gitignore"
 GITATTRIBUTES="$REPO_ROOT/.gitattributes"
 GENERATED_CHECK="$MODULE_ROOT/scripts/check-generated-files.sh"
+MAKEFILE="$MODULE_ROOT/Makefile"
 
 if [[ ! -f "$DOC" ]]; then
   echo "ERRO: documento de integridade de artefatos não encontrado: $DOC" >&2
@@ -55,6 +56,11 @@ fi
 
 if [[ ! -x "$GENERATED_CHECK" ]]; then
   echo "ERRO: script de verificação de arquivos gerados ausente ou sem permissão de execução: $GENERATED_CHECK" >&2
+  exit 1
+fi
+
+if [[ ! -f "$MAKEFILE" ]]; then
+  echo "ERRO: Makefile de automação local não encontrado: $MAKEFILE" >&2
   exit 1
 fi
 
@@ -144,6 +150,35 @@ for pattern in "${required_gitignore_patterns[@]}"; do
   fi
 done
 
+required_makefile_patterns=(
+  ".PHONY: deps tidy test vet cover check build java-test samples clean all help"
+  "deps:"
+  "go mod download"
+  "tidy:"
+  "go mod tidy"
+  "test: deps"
+  "go test ./..."
+  "vet: deps"
+  "go vet ./..."
+  "cover: deps"
+  "go test -cover ./..."
+  "check: deps"
+  "./scripts/check-generated-files.sh"
+  "./scripts/check-release-artifacts.sh"
+  "build: deps"
+  "go build -ldflags"
+  "java-test:"
+  "\$(MAKE) -C assinador clean all test"
+  "all: deps test vet cover check java-test build"
+)
+
+for pattern in "${required_makefile_patterns[@]}"; do
+  if ! grep -Fq -- "$pattern" "$MAKEFILE"; then
+    echo "ERRO: padrão ausente no Makefile: $pattern" >&2
+    exit 1
+  fi
+done
+
 "$GENERATED_CHECK" >/dev/null
 
 required_doc_patterns=(
@@ -197,4 +232,4 @@ if ! grep -Fq -- "module github.com/BarbaraNogueiraCS/runner" "$MODULE_ROOT/go.m
   exit 1
 fi
 
-echo "OK: Sprint 1 coberta; .github, docs, .gitignore e .gitattributes estão na raiz; arquivos gerados não são versionados; workflows usam runner-implementacao; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem."
+echo "OK: Sprint 1 coberta; .github, docs, .gitignore e .gitattributes estão na raiz; arquivos gerados não são versionados; workflows usam runner-implementacao; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all."
