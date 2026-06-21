@@ -9,6 +9,7 @@ import (
 
 	"github.com/BarbaraNogueiraCS/runner/internal/apperrors"
 	"github.com/BarbaraNogueiraCS/runner/internal/assinador"
+	"github.com/spf13/cobra"
 )
 
 var version = "dev"
@@ -20,25 +21,68 @@ func main() {
 }
 
 func run(args []string) int {
-	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		usage()
-		return apperrors.OK
-	}
-	switch args[0] {
-	case "version", "--version", "-v":
-		fmt.Println(version)
-		return apperrors.OK
-	case "sign":
-		return sign(args[1:])
-	case "validate":
-		return validate(args[1:])
-	case "server":
-		return server(args[1:])
-	default:
-		fmt.Fprintf(os.Stderr, "Comando desconhecido: %s\n\n", args[0])
-		usage()
+	exitCode := apperrors.OK
+	root := newRootCommand(&exitCode)
+	root.SetArgs(args)
+	if err := root.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
+	return exitCode
+}
+
+func newRootCommand(exitCode *int) *cobra.Command {
+	root := &cobra.Command{
+		Use:           "assinatura",
+		Short:         "Sistema Runner - CLI de assinatura digital",
+		Version:       version,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			usage()
+			*exitCode = apperrors.OK
+		},
+	}
+	root.SetVersionTemplate("{{.Version}}\n")
+
+	root.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Exibe a versão atual do CLI",
+		Args:  cobra.NoArgs,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Fprintln(cmd.OutOrStdout(), version)
+			*exitCode = apperrors.OK
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "sign",
+		Short:              "Cria uma assinatura digital",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = sign(args)
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "validate",
+		Short:              "Valida uma assinatura digital",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = validate(args)
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "server",
+		Short:              "Gerencia o assinador.jar em modo servidor",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = server(args)
+		},
+	})
+
+	return root
 }
 
 func sign(args []string) int {

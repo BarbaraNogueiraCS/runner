@@ -57,8 +57,25 @@ Para gerar release no GitHub, faça a tag a partir da `main`:
 ```bash
 git checkout main
 git pull origin main
-git tag v1.0.3
-git push origin v1.0.3
+git tag v1.0.5
+git push origin v1.0.5
 ```
 
 O workflow de release gera binários, checksums e assinaturas Cosign (`.sig`, `.pem` e `.bundle`) e publica tudo em GitHub Releases. A documentação fica em `docs/`, também na raiz do repositório.
+
+
+## Sprint 1 — Fundação e Entrega Contínua
+
+A Sprint 1 está rastreada em `docs/sprint1-fundacao-entrega-continua.md`. O CLI usa Cobra (`github.com/spf13/cobra`) e mantém a identidade do repositório no módulo Go:
+
+```go
+module github.com/BarbaraNogueiraCS/runner
+```
+
+Para instalar a ferramenta de scaffolding do Cobra em ambiente de desenvolvimento:
+
+```bash
+go install github.com/spf13/cobra-cli@latest
+```
+
+O usuário final não precisa instalar `cobra-cli`; os binários são gerados e publicados automaticamente pelo GitHub Actions em GitHub Releases.
