@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -15,6 +16,23 @@ import (
 var version = "dev"
 
 type flags map[string]string
+
+var signAllowedFlags = map[string]bool{
+	"bundle": true, "provenance": true, "crypto-material": true, "cert-chain": true,
+	"timestamp": true, "strategy": true, "policy": true, "config": true,
+	"signer": true, "input": true, "output": true, "local": true,
+	"jar": true, "port": true, "idle-timeout-minutes": true, "release-json": true,
+}
+
+var validateAllowedFlags = map[string]bool{
+	"signature": true, "timestamp": true, "policy": true, "config": true,
+	"bundle": true, "provenance": true, "input": true, "output": true, "local": true,
+	"jar": true, "port": true, "idle-timeout-minutes": true, "release-json": true,
+}
+
+var serverAllowedFlags = map[string]bool{
+	"jar": true, "port": true, "idle-timeout-minutes": true, "release-json": true,
+}
 
 func main() {
 	os.Exit(run(os.Args[1:]))
@@ -86,7 +104,11 @@ func newRootCommand(exitCode *int) *cobra.Command {
 }
 
 func sign(args []string) int {
-	f, err := parseFlags(args)
+	if containsHelp(args) {
+		signUsage(os.Stdout)
+		return apperrors.OK
+	}
+	f, err := parseFlagsKnown(args, signAllowedFlags)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
@@ -138,7 +160,11 @@ func sign(args []string) int {
 }
 
 func validate(args []string) int {
-	f, err := parseFlags(args)
+	if containsHelp(args) {
+		validateUsage(os.Stdout)
+		return apperrors.OK
+	}
+	f, err := parseFlagsKnown(args, validateAllowedFlags)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
@@ -192,11 +218,15 @@ func validate(args []string) int {
 
 func server(args []string) int {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Uso inválido: use assinatura server start|status|stop")
+		serverUsage(os.Stderr)
 		return apperrors.UsageError
 	}
+	if containsHelp(args) {
+		serverUsage(os.Stdout)
+		return apperrors.OK
+	}
 	action := args[0]
-	f, err := parseFlags(args[1:])
+	f, err := parseFlagsKnown(args[1:], serverAllowedFlags)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
@@ -260,6 +290,90 @@ Variáveis de ambiente:
   RUNNER_JAVA           Caminho explícito do executável java
   RUNNER_HOME           Diretório de estado, logs e cache. Padrão: ~/.hubsaude
   release-json          URL opcional para release.json com URLs de runtime Java`)
+}
+
+func signUsage(w io.Writer) {
+	fmt.Fprintln(w, `Uso:
+  assinatura sign --bundle <bundle.json> --provenance <provenance.json> --crypto-material <crypto.json> --cert-chain <certs.json> --timestamp <unix> --policy <uri> [opções]
+
+Parâmetros obrigatórios no fluxo principal:
+  --bundle              Caminho do Bundle FHIR R4 em JSON
+  --provenance          Caminho do Provenance FHIR R4 em JSON
+  --crypto-material     Caminho do JSON de material criptográfico simulado
+  --cert-chain          Caminho do JSON com cadeia de certificados em base64
+  --timestamp           Timestamp Unix de referência
+  --policy              URI da política de assinatura
+
+Opções:
+  --strategy iat        Estratégia simulada. Padrão: iat
+  --config <arquivo>    Configuração adicional do assinador
+  --signer <nome>       Nome exibido no campo who.display da assinatura
+  --output <arquivo>    Grava o resultado no arquivo informado
+  --local               Invoca diretamente java -jar assinador.jar
+  --jar <arquivo>       Caminho do assinador.jar
+  --port <porta>        Porta do servidor do assinador. Padrão: 8080
+  --release-json <url>  Manifesto usado para provisionar Java/JDK
+  --help                Exibe esta ajuda
+
+Compatibilidade:
+  assinatura sign --input <arquivo> --signer <nome> --local --jar <assinador.jar>`)
+}
+
+func validateUsage(w io.Writer) {
+	fmt.Fprintln(w, `Uso:
+  assinatura validate --signature <signature.json> --timestamp <unix> --policy <uri> [opções]
+
+Parâmetros principais:
+  --signature           Caminho da assinatura JSON a validar
+  --timestamp           Timestamp Unix de referência
+  --policy              URI da política esperada
+
+Opções:
+  --bundle <arquivo>    Bundle FHIR R4 usado para conferir integridade
+  --provenance <arquivo> Provenance FHIR R4 usado para conferir integridade
+  --config <arquivo>    Configuração adicional do assinador
+  --output <arquivo>    Grava o resultado no arquivo informado
+  --local               Invoca diretamente java -jar assinador.jar
+  --jar <arquivo>       Caminho do assinador.jar
+  --port <porta>        Porta do servidor do assinador. Padrão: 8080
+  --release-json <url>  Manifesto usado para provisionar Java/JDK
+  --help                Exibe esta ajuda`)
+}
+
+func serverUsage(w io.Writer) {
+	fmt.Fprintln(w, `Uso:
+  assinatura server start --jar <assinador.jar> [--port 8080] [--idle-timeout-minutes 10]
+  assinatura server status [--port 8080]
+  assinatura server stop [--port 8080]
+
+Opções:
+  --jar <arquivo>       Caminho do assinador.jar
+  --port <porta>        Porta do servidor do assinador. Padrão: 8080
+  --idle-timeout-minutes Encerra o servidor após período ocioso
+  --release-json <url>  Manifesto usado para provisionar Java/JDK
+  --help                Exibe esta ajuda`)
+}
+
+func containsHelp(args []string) bool {
+	for _, arg := range args {
+		if arg == "--help" || arg == "-h" || arg == "help" {
+			return true
+		}
+	}
+	return false
+}
+
+func parseFlagsKnown(args []string, allowed map[string]bool) (flags, error) {
+	parsed, err := parseFlags(args)
+	if err != nil {
+		return parsed, err
+	}
+	for key := range parsed {
+		if !allowed[key] {
+			return parsed, fmt.Errorf("flag desconhecida para este comando: --%s. Use --help para ver as opções disponíveis", key)
+		}
+	}
+	return parsed, nil
 }
 
 func parseFlags(args []string) (flags, error) {

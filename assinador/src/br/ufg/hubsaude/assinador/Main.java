@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class Main {
-    private static final SignatureService SERVICE = new GuideSignatureService();
+    private static final SignatureService SERVICE = new FakeSignatureService();
 
     private Main() {}
 

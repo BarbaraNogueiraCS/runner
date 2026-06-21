@@ -1,6 +1,5 @@
 # -----------------------------------------------------------------------------
 # Git ignore do repositório Runner
-# Mantido na raiz do repositório para valer para .github/, docs/ e runner-implementacao/.
 # -----------------------------------------------------------------------------
 
 # Saídas de build/teste - NUNCA commitar
@@ -32,16 +31,13 @@ coverage.html
 *.bundle
 *.p12
 
-# Exceção: arquivos de origem/documentação não são afetados pelas regras acima.
-# Certificados e JSONs gerados por testes devem ficar dentro de target/ ou examples/.
-
-# Saídas específicas do módulo Runner
-runner-implementacao/assinador/target/
-runner-implementacao/assinador/out/
-runner-implementacao/dist/
-runner-implementacao/examples/*.json
-runner-implementacao/examples/assinatura*.json
-runner-implementacao/release/
+# Saídas específicas do Runner na estrutura raiz
+assinador/target/
+assinador/out/
+dist/
+examples/*.json
+examples/assinatura*.json
+release/
 
 # Estado local do Runner/HubSaúde
 .hubsaude/

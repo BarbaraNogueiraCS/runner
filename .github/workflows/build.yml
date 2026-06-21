@@ -21,9 +21,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: runner-implementacao
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -32,7 +29,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
         run: go mod download
@@ -65,9 +62,6 @@ jobs:
     name: Compilar binários de desenvolvimento
     needs: test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: runner-implementacao
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -76,7 +70,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
         run: go mod download
@@ -97,4 +91,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runner-dev-binaries
-          path: runner-implementacao/dist/*
+          path: dist/*
