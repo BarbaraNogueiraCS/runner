@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kyriosdata/runner/internal/apperrors"
-	"github.com/kyriosdata/runner/internal/simulador"
+	"github.com/BarbaraNogueiraCS/runner/internal/apperrors"
+	"github.com/BarbaraNogueiraCS/runner/internal/simulador"
 )
 
 var version = "dev"

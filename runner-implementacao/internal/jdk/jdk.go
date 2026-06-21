@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kyriosdata/runner/internal/release"
+	"github.com/BarbaraNogueiraCS/runner/internal/release"
 )
 
 // FindJava locates a Java executable. It first honors RUNNER_JAVA, then tries
