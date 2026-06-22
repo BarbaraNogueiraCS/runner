@@ -23,3 +23,33 @@ func TestParseFlagsAcceptsEqualsSyntax(t *testing.T) {
 		t.Fatalf("flags parseadas incorretamente: %#v", f)
 	}
 }
+
+func TestURLWithPortBuildsDefaultHTTPSURL(t *testing.T) {
+	u, err := urlWithPort("", "9443")
+	if err != nil {
+		t.Fatalf("urlWithPort retornou erro: %v", err)
+	}
+	if u != "https://localhost:9443" {
+		t.Fatalf("URL inesperada: %s", u)
+	}
+}
+
+func TestURLWithPortOverridesURLPort(t *testing.T) {
+	u, err := urlWithPort("http://127.0.0.1:8080", "9443")
+	if err != nil {
+		t.Fatalf("urlWithPort retornou erro: %v", err)
+	}
+	if u != "http://127.0.0.1:9443" {
+		t.Fatalf("URL inesperada: %s", u)
+	}
+}
+
+func TestNewClientFromFlagsAcceptsSourceAndChecksum(t *testing.T) {
+	c, err := newClientFromFlags(flags{"port": "9443", "source": "https://example.org/simulador.jar", "sha256": "abc"})
+	if err != nil {
+		t.Fatalf("newClientFromFlags retornou erro: %v", err)
+	}
+	if c.BaseURL != "https://localhost:9443" || c.SourceURL != "https://example.org/simulador.jar" || c.SourceSHA256 != "abc" {
+		t.Fatalf("cliente inesperado: %#v", c)
+	}
+}

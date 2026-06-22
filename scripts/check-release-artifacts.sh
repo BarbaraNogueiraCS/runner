@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verifica se a estrutura raiz do projeto, os workflows de CI/release,
-# checksums, Cosign e rastreabilidade das Sprints 1 e 2 estão presentes.
+# checksums, Cosign e rastreabilidade das Sprints 1 a 4 estão presentes.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,6 +12,7 @@ DOC="$REPO_ROOT/docs/integridade-assinatura-artefatos.md"
 SPRINT1_DOC="$REPO_ROOT/docs/sprint1-fundacao-entrega-continua.md"
 SPRINT2_DOC="$REPO_ROOT/docs/sprint2-assinatura-digital-local.md"
 SPRINT3_DOC="$REPO_ROOT/docs/sprint3-modo-servidor-pkcs11.md"
+SPRINT4_DOC="$REPO_ROOT/docs/sprint4-simulador-seguranca-artefatos.md"
 SPRINT2_JAVA_DIR="$REPO_ROOT/projetos/assinador-java"
 GITIGNORE="$REPO_ROOT/.gitignore"
 GITATTRIBUTES="$REPO_ROOT/.gitattributes"
@@ -27,6 +28,7 @@ for required in \
   "$SPRINT1_DOC" \
   "$SPRINT2_DOC" \
   "$SPRINT3_DOC" \
+  "$SPRINT4_DOC" \
   "$GITIGNORE" \
   "$GITATTRIBUTES" \
   "$GENERATED_CHECK" \
@@ -113,7 +115,46 @@ for pattern in "${sprint3_patterns[@]}"; do
   fi
 done
 
-for file in "$WORKFLOW" "$BUILD_WORKFLOW" "$GITIGNORE" "$GITATTRIBUTES" "$SPRINT1_DOC" "$SPRINT2_DOC" "$SPRINT3_DOC" "$DOC" "$REPO_ROOT/README.md"; do
+sprint4_items=(
+  "$REPO_ROOT/cmd/simulador/main.go"
+  "$REPO_ROOT/internal/simulador/client.go"
+  "$REPO_ROOT/internal/simulador/client_test.go"
+  "$REPO_ROOT/internal/simulador/acceptance_test.go"
+  "$REPO_ROOT/internal/release/manifest.go"
+  "$REPO_ROOT/internal/release/manifest_test.go"
+  "$REPO_ROOT/scripts/verify-release-artifact.sh"
+  "$SPRINT4_DOC"
+)
+for item in "${sprint4_items[@]}"; do
+  if [[ ! -e "$item" ]]; then
+    echo "ERRO: item obrigatório da Sprint 4 ausente: $item" >&2
+    exit 1
+  fi
+done
+
+sprint4_patterns=(
+  "US-03.1"
+  "US-03.2"
+  "US-03.3"
+  "US-03.4"
+  "simulador start"
+  "simulador stop"
+  "simulador status"
+  "--source"
+  "--sha256"
+  "checksums.txt"
+  "cosign verify-blob"
+  "EnsureArtifactFromURL"
+  "RUNNER_SIMULADOR_SOURCE"
+)
+for pattern in "${sprint4_patterns[@]}"; do
+  if ! grep -R -Fq -- "$pattern" "$SPRINT4_DOC" "$REPO_ROOT/cmd/simulador" "$REPO_ROOT/internal/simulador" "$REPO_ROOT/internal/release"; then
+    echo "ERRO: padrão da Sprint 4 ausente: $pattern" >&2
+    exit 1
+  fi
+done
+
+for file in "$WORKFLOW" "$BUILD_WORKFLOW" "$GITIGNORE" "$GITATTRIBUTES" "$SPRINT1_DOC" "$SPRINT2_DOC" "$SPRINT3_DOC" "$SPRINT4_DOC" "$DOC" "$REPO_ROOT/README.md"; do
   if grep -Fq -- "runner-implementacao" "$file"; then
     echo "ERRO: referência antiga a runner-implementacao encontrada em $file" >&2
     exit 1
@@ -320,6 +361,32 @@ for item in "${required_sprint2_code_patterns[@]}"; do
   fi
 done
 
+required_sprint4_code_patterns=(
+  "$REPO_ROOT/cmd/simulador/main.go:simulador start"
+  "$REPO_ROOT/cmd/simulador/main.go:--source <url>"
+  "$REPO_ROOT/cmd/simulador/main.go:--sha256 <hash>"
+  "$REPO_ROOT/cmd/simulador/main.go:urlWithPort"
+  "$REPO_ROOT/internal/simulador/client.go:SourceURL"
+  "$REPO_ROOT/internal/simulador/client.go:SourceSHA256"
+  "$REPO_ROOT/internal/simulador/client.go:EnsureArtifactFromURL"
+  "$REPO_ROOT/internal/simulador/client.go:IsTCPPortFree"
+  "$REPO_ROOT/internal/process/state.go:ProcessDir"
+  "$REPO_ROOT/internal/release/manifest.go:EnsureArtifactFromURL"
+  "$REPO_ROOT/internal/release/manifest.go:checksum SHA256 inválido"
+  "$REPO_ROOT/internal/release/manifest.go:versionMatches"
+  "$REPO_ROOT/.github/workflows/release.yml:simulador-\${VERSION}-linux-amd64.AppImage"
+  "$REPO_ROOT/.github/workflows/release.yml:simulador-\${VERSION}-windows-amd64.exe"
+  "$REPO_ROOT/.github/workflows/release.yml:simulador-\${VERSION}-macos-amd64.dmg"
+)
+for item in "${required_sprint4_code_patterns[@]}"; do
+  file="${item%%:*}"
+  pattern="${item#*:}"
+  if ! grep -Fq -- "$pattern" "$file"; then
+    echo "ERRO: padrão da Sprint 4 ausente em $file: $pattern" >&2
+    exit 1
+  fi
+done
+
 if ! grep -Fq -- "github.com/spf13/cobra" "$REPO_ROOT/go.mod"; then
   echo "ERRO: go.mod não declara dependência github.com/spf13/cobra." >&2
   exit 1
@@ -332,4 +399,4 @@ fi
 
 "$GENERATED_CHECK" >/dev/null
 
-echo "OK: Sprint 1, Sprint 2 e Sprint 3 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha; check-internal-packages garante que internal/release foi commitado."
+echo "OK: Sprint 1, Sprint 2, Sprint 3 e Sprint 4 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha; check-internal-packages garante que internal/release foi commitado."

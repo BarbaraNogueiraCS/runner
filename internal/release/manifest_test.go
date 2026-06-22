@@ -75,3 +75,37 @@ func TestArtifactFallbackToValidador(t *testing.T) {
 		t.Fatalf("artefato inesperado: %s", a.URL)
 	}
 }
+
+func TestEnsureArtifactFromURLDownloadsAndReusesSource(t *testing.T) {
+	t.Setenv("RUNNER_HOME", t.TempDir())
+	body := []byte("simulador jar via source")
+	sum := sha256.Sum256(body)
+	downloads := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/simulador.jar" {
+			http.NotFound(w, r)
+			return
+		}
+		downloads++
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+
+	first, artifact, reused, err := EnsureArtifactFromURL(context.Background(), srv.URL+"/simulador.jar", fmt.Sprintf("%x", sum), "simulador")
+	if err != nil {
+		t.Fatalf("EnsureArtifactFromURL retornou erro: %v", err)
+	}
+	if reused {
+		t.Fatalf("primeiro uso não deve ser reuso")
+	}
+	if artifact.URL == "" || artifact.SHA256 == "" {
+		t.Fatalf("artefato direto deveria preservar URL e SHA: %#v", artifact)
+	}
+	second, _, reused, err := EnsureArtifactFromURL(context.Background(), srv.URL+"/simulador.jar", fmt.Sprintf("%x", sum), "simulador")
+	if err != nil {
+		t.Fatalf("EnsureArtifactFromURL no reuso retornou erro: %v", err)
+	}
+	if !reused || first != second || downloads != 1 {
+		t.Fatalf("cache inesperado: first=%s second=%s reused=%v downloads=%d", first, second, reused, downloads)
+	}
+}
