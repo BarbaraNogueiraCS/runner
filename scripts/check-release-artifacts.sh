@@ -11,6 +11,7 @@ BUILD_WORKFLOW="$REPO_ROOT/.github/workflows/build.yml"
 DOC="$REPO_ROOT/docs/integridade-assinatura-artefatos.md"
 SPRINT1_DOC="$REPO_ROOT/docs/sprint1-fundacao-entrega-continua.md"
 SPRINT2_DOC="$REPO_ROOT/docs/sprint2-assinatura-digital-local.md"
+SPRINT3_DOC="$REPO_ROOT/docs/sprint3-modo-servidor-pkcs11.md"
 SPRINT2_JAVA_DIR="$REPO_ROOT/projetos/assinador-java"
 GITIGNORE="$REPO_ROOT/.gitignore"
 GITATTRIBUTES="$REPO_ROOT/.gitattributes"
@@ -25,6 +26,7 @@ for required in \
   "$DOC" \
   "$SPRINT1_DOC" \
   "$SPRINT2_DOC" \
+  "$SPRINT3_DOC" \
   "$GITIGNORE" \
   "$GITATTRIBUTES" \
   "$GENERATED_CHECK" \
@@ -79,7 +81,39 @@ for item in "${root_items[@]}"; do
   fi
 done
 
-for file in "$WORKFLOW" "$BUILD_WORKFLOW" "$GITIGNORE" "$GITATTRIBUTES" "$SPRINT1_DOC" "$SPRINT2_DOC" "$DOC" "$REPO_ROOT/README.md"; do
+
+sprint3_items=(
+  "$REPO_ROOT/assinador/src/br/ufg/hubsaude/assinador/SignatureController.java"
+  "$REPO_ROOT/assinador/src/br/ufg/hubsaude/assinador/Pkcs11Support.java"
+  "$REPO_ROOT/internal/assinador/client.go"
+  "$REPO_ROOT/internal/process/state.go"
+  "$SPRINT3_DOC"
+)
+for item in "${sprint3_items[@]}"; do
+  if [[ ! -e "$item" ]]; then
+    echo "ERRO: item obrigatório da Sprint 3 ausente: $item" >&2
+    exit 1
+  fi
+done
+
+sprint3_patterns=(
+  "SignatureController"
+  "POST /sign"
+  "POST /validate"
+  "PKCS#11"
+  "SunPKCS11"
+  "assinatura start"
+  "assinatura stop"
+  "--timeout"
+)
+for pattern in "${sprint3_patterns[@]}"; do
+  if ! grep -R -Fq -- "$pattern" "$SPRINT3_DOC" "$REPO_ROOT/assinador/src/br/ufg/hubsaude/assinador" "$REPO_ROOT/cmd/assinatura"; then
+    echo "ERRO: padrão da Sprint 3 ausente: $pattern" >&2
+    exit 1
+  fi
+done
+
+for file in "$WORKFLOW" "$BUILD_WORKFLOW" "$GITIGNORE" "$GITATTRIBUTES" "$SPRINT1_DOC" "$SPRINT2_DOC" "$SPRINT3_DOC" "$DOC" "$REPO_ROOT/README.md"; do
   if grep -Fq -- "runner-implementacao" "$file"; then
     echo "ERRO: referência antiga a runner-implementacao encontrada em $file" >&2
     exit 1
@@ -298,4 +332,4 @@ fi
 
 "$GENERATED_CHECK" >/dev/null
 
-echo "OK: Sprint 1 e Sprint 2 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha; check-internal-packages garante que internal/release foi commitado."
+echo "OK: Sprint 1, Sprint 2 e Sprint 3 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha; check-internal-packages garante que internal/release foi commitado."
