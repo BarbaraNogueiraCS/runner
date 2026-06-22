@@ -4,7 +4,7 @@
 # go test, go vet e go build. O GitHub Actions continua executando
 # go mod download em ambiente limpo; este Makefile automatiza o fluxo local.
 
-.PHONY: deps tidy test vet cover check text-check build java-test samples clean all help
+.PHONY: deps tidy test vet cover check text-check internal-check build java-test samples clean all help
 
 VERSION ?= dev
 
@@ -17,6 +17,7 @@ help:
 	@echo "  make cover      - baixa dependências e roda go test -cover ./..."
 	@echo "  make check      - valida higiene do repositório e artefatos de release"
 	@echo "  make text-check - valida quebras de linha LF em arquivos críticos"
+	@echo "  make internal-check - valida pacotes internos obrigatórios"
 	@echo "  make build      - compila os CLIs locais em dist/"
 	@echo "  make java-test  - compila e testa o assinador.jar"
 	@echo "  make samples    - gera arquivos de exemplo do assinador em assinador/target/"
@@ -48,8 +49,12 @@ cover: deps
 text-check:
 	./scripts/check-text-format.sh
 
+# Verifica se pacotes internos obrigatórios existem e são resolvidos pelo Go.
+internal-check:
+	./scripts/check-internal-packages.sh
+
 # Verificações de higiene do repositório e rastreabilidade da release.
-check: deps text-check
+check: deps text-check internal-check
 	./scripts/check-generated-files.sh
 	./scripts/check-release-artifacts.sh
 

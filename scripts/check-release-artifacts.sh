@@ -15,7 +15,8 @@ SPRINT2_JAVA_DIR="$REPO_ROOT/projetos/assinador-java"
 GITIGNORE="$REPO_ROOT/.gitignore"
 GITATTRIBUTES="$REPO_ROOT/.gitattributes"
 GENERATED_CHECK="$REPO_ROOT/scripts/check-generated-files.sh"
-  "$REPO_ROOT/scripts/check-text-format.sh"
+TEXT_FORMAT_CHECK="$REPO_ROOT/scripts/check-text-format.sh"
+INTERNAL_PACKAGES_CHECK="$REPO_ROOT/scripts/check-internal-packages.sh"
 MAKEFILE="$REPO_ROOT/Makefile"
 
 for required in \
@@ -27,6 +28,8 @@ for required in \
   "$GITIGNORE" \
   "$GITATTRIBUTES" \
   "$GENERATED_CHECK" \
+  "$TEXT_FORMAT_CHECK" \
+  "$INTERNAL_PACKAGES_CHECK" \
   "$MAKEFILE" \
   "$REPO_ROOT/go.mod"; do
   if [[ ! -e "$required" ]]; then
@@ -51,6 +54,8 @@ root_items=(
   "$REPO_ROOT/cmd/assinatura"
   "$REPO_ROOT/cmd/simulador"
   "$REPO_ROOT/internal"
+  "$REPO_ROOT/internal/release"
+  "$REPO_ROOT/internal/release/manifest.go"
   "$REPO_ROOT/assinador"
   "$REPO_ROOT/scripts"
   "$REPO_ROOT/examples"
@@ -72,8 +77,8 @@ for file in "$WORKFLOW" "$BUILD_WORKFLOW" "$GITIGNORE" "$GITATTRIBUTES" "$SPRINT
 done
 
 required_workflow_patterns=(
-  "cache-dependency-path: go.mod"
-  "go-version: '1.23.2'"
+  "cache-dependency-path: go.sum"
+  "go-version-file: go.mod"
   "path: dist/*"
   "actions/download-artifact@v4"
   "merge-multiple: true"
@@ -118,6 +123,8 @@ required_build_patterns=(
   "feature/**"
   "go test ./..."
   "go vet ./..."
+  "Verificar pacotes internos obrigatórios"
+  "./scripts/check-internal-packages.sh"
   "GOOS=linux GOARCH=amd64"
   "GOOS=windows GOARCH=amd64"
   "GOOS=darwin GOARCH=amd64"
@@ -148,7 +155,7 @@ for pattern in "${required_gitignore_patterns[@]}"; do
 done
 
 required_makefile_patterns=(
-  ".PHONY: deps tidy test vet cover check text-check build java-test samples clean all help"
+  ".PHONY: deps tidy test vet cover check text-check internal-check build java-test samples clean all help"
   "deps:"
   "go mod download"
   "tidy:"
@@ -161,7 +168,9 @@ required_makefile_patterns=(
   "go test -cover ./..."
   "text-check:"
   "./scripts/check-text-format.sh"
-  "check: deps text-check"
+  "internal-check:"
+  "./scripts/check-internal-packages.sh"
+  "check: deps text-check internal-check"
   "./scripts/check-generated-files.sh"
   "./scripts/check-release-artifacts.sh"
   "./scripts/check-text-format.sh"
@@ -253,6 +262,8 @@ required_sprint2_code_patterns=(
   "$REPO_ROOT/internal/assinador/client.go:assinador.jar não encontrado"
   "$REPO_ROOT/internal/jdk/jdk.go:EnsureJava21"
   "$REPO_ROOT/internal/jdk/jdk.go:ManagedJavaPathFor"
+  "$REPO_ROOT/internal/release/manifest.go:package release"
+  "$REPO_ROOT/internal/release/manifest.go:DownloadAndInstallJRE"
 )
 for item in "${required_sprint2_code_patterns[@]}"; do
   file="${item%%:*}"
@@ -275,4 +286,4 @@ fi
 
 "$GENERATED_CHECK" >/dev/null
 
-echo "OK: Sprint 1 e Sprint 2 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha."
+echo "OK: Sprint 1 e Sprint 2 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha; check-internal-packages garante que internal/release foi commitado."

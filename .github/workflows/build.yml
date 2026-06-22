@@ -30,9 +30,9 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
+          go-version-file: go.mod
           cache: true
-          cache-dependency-path: go.mod
+          cache-dependency-path: go.sum
 
       - name: Exibir contexto do repositório
         shell: bash
@@ -41,7 +41,6 @@ jobs:
           pwd
           ls -la
           test -f go.mod
-          test -f go.sum
 
       - name: Baixar dependências Go
         shell: bash
@@ -62,6 +61,10 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: ./scripts/check-generated-files.sh
+
+      - name: Verificar pacotes internos obrigatórios
+        shell: bash
+        run: ./scripts/check-internal-packages.sh
 
       - name: Rodar go vet
         shell: bash
@@ -92,9 +95,9 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
+          go-version-file: go.mod
           cache: true
-          cache-dependency-path: go.mod
+          cache-dependency-path: go.sum
 
       - name: Baixar dependências Go
         shell: bash
