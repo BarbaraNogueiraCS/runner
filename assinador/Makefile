@@ -41,6 +41,10 @@ test: $(JAR) samples
 	! java -jar $(JAR) sign --bundle target/bundle.json --provenance target/provenance.json --crypto-material target/crypto-token-sem-pin.json --cert-chain target/certs.json --timestamp $$TS --policy '$(POLICY)' --config target/config.json > target/token-sem-pin.out 2> target/token-sem-pin.err; \
 	grep -q 'CRYPTO.PIN-REQUIRED' target/token-sem-pin.err
 	@TS=$$(cat target/timestamp.txt); \
+	printf '%s\n' '{"type":"TOKEN","pin":"123456","identifier":"runner","pkcs11Library":"/arquivo/pkcs11-inexistente.so"}' > target/crypto-token-lib-inexistente.json; \
+	! java -jar $(JAR) sign --bundle target/bundle.json --provenance target/provenance.json --crypto-material target/crypto-token-lib-inexistente.json --cert-chain target/certs.json --timestamp $$TS --policy '$(POLICY)' --config target/config.json > target/token-lib-inexistente.out 2> target/token-lib-inexistente.err; \
+	grep -q 'PKCS11.LIBRARY-NOT-FOUND' target/token-lib-inexistente.err
+	@TS=$$(cat target/timestamp.txt); \
 	! java -jar $(JAR) sign --provenance target/provenance.json --crypto-material target/crypto.json --cert-chain target/certs.json --timestamp $$TS --policy '$(POLICY)' --config target/config.json > target/missing-bundle.out 2> target/missing-bundle.err; \
 	grep -q 'INPUT.MISSING-PARAMETER' target/missing-bundle.err
 	@TS=$$(cat target/timestamp.txt); \
@@ -54,6 +58,20 @@ test: $(JAR) samples
 	printf '%s\n' '{"resourceType":"OperationOutcome"}' > target/not-signature.json; \
 	! java -jar $(JAR) validate --signature target/not-signature.json --timestamp $$TS --policy '$(POLICY)' --bundle target/bundle.json --provenance target/provenance.json --config target/config.json > target/not-signature.out 2> target/not-signature.err; \
 	grep -q 'FORMAT.SIGNATURE-DATA-INVALID' target/not-signature.err
+	@PORT=18080; TS=$$(cat target/timestamp.txt); \
+	java -jar $(JAR) server --port $$PORT --timeout 1 > target/server.out 2> target/server.err & PID=$$!; \
+	trap 'curl -fsS -X POST http://127.0.0.1:'$$PORT'/shutdown >/dev/null 2>&1 || true; kill '$$PID' >/dev/null 2>&1 || true' EXIT; \
+	for i in $$(seq 1 30); do curl -fsS http://127.0.0.1:$$PORT/health >/dev/null 2>&1 && break; sleep 0.2; done; \
+	curl -fsS http://127.0.0.1:$$PORT/health >/dev/null; \
+	printf '{"bundle":"target/bundle.json","provenance":"target/provenance.json","cryptoMaterial":"target/crypto.json","certificateChain":"target/certs.json","timestamp":"%s","policy":"%s","config":"target/config.json","signer":"Teste Runner HTTP"}' $$TS '$(POLICY)' > target/http-sign-body.json; \
+	curl -fsS -X POST -H 'Content-Type: application/json' --data @target/http-sign-body.json http://127.0.0.1:$$PORT/sign > target/http-assinatura.json; \
+	grep -q '"resourceType":"Signature"' target/http-assinatura.json; \
+	printf '{"signature":"target/http-assinatura.json","timestamp":"%s","policy":"%s","bundle":"target/bundle.json","provenance":"target/provenance.json","config":"target/config.json"}' $$TS '$(POLICY)' > target/http-validate-body.json; \
+	curl -fsS -X POST -H 'Content-Type: application/json' --data @target/http-validate-body.json http://127.0.0.1:$$PORT/validate > target/http-validacao.json; \
+	grep -q '"valid":true' target/http-validacao.json; \
+	curl -fsS -X POST http://127.0.0.1:$$PORT/shutdown >/dev/null; \
+	wait $$PID || true; \
+	trap - EXIT
 	@echo 'Testes locais do assinador.jar passaram.'
 
 clean:

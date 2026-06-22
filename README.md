@@ -28,10 +28,10 @@ O projeto entrega:
 
 - `assinatura`: CLI em Go para criar e validar assinaturas digitais simuladas.
 - `simulador`: CLI em Go para consultar, iniciar e parar o Simulador do HubSaúde.
-- `assinador.jar`: componente Java 21 que valida parâmetros, simula assinatura, simula validação e pode ser invocado localmente pelo CLI.
+- `assinador.jar`: componente Java 21 que valida parâmetros, simula assinatura, simula validação, expõe endpoints HTTP `/sign` e `/validate` e pode ser invocado localmente ou em modo servidor pelo CLI.
 - GitHub Actions para CI, build multiplataforma, GitHub Releases, checksums SHA256 e assinatura Cosign.
 
-O Simulador do HubSaúde é tratado como sistema externo. O comando `simulador` gerencia/consulta esse serviço, normalmente em `https://localhost:8443/`.
+O Simulador do HubSaúde é tratado como sistema externo. O comando `simulador` gerencia/consulta esse serviço, normalmente em `https://localhost:8443/`. Quando o `simulador.jar` não é informado por `--jar`, o CLI consulta `release.json`, baixa o artefato do GitHub Releases, valida o SHA-256 e reutiliza o cache em `~/.hubsaude/`.
 
 ## Pré-requisitos locais
 
@@ -167,18 +167,77 @@ Valide localmente:
   --config assinador/target/config.json
 ```
 
+## Assinador em modo servidor
+
+Depois de `make java-test` e `make build`, inicie o assinador HTTP:
+
+```bash
+./dist/assinatura start   --jar assinador/target/assinador.jar   --port 8080   --timeout 10
+```
+
+Consulte status:
+
+```bash
+./dist/assinatura status --port 8080
+```
+
+Pare o servidor:
+
+```bash
+./dist/assinatura stop --port 8080
+```
+
+Os comandos `sign` e `validate` usam o servidor por padrão quando ele está ativo. Use `--local` para forçar a execução direta com `java -jar`.
+
+## PKCS#11 / token ou smart card
+
+O material criptográfico aceita `type` igual a `TOKEN` ou `SMARTCARD`. Para testes sem dispositivo real, use `simulation=true`. Para dispositivo real, informe `pin` e `pkcs11Library`. Consulte `docs/sprint3-modo-servidor-pkcs11.md`.
+
+
+## Simulador do HubSaúde
+
+Depois de `make build`, consulte o status:
+
+```bash
+./dist/simulador status --port 8443 --insecure
+```
+
+Inicie com download dinâmico via `release.json`:
+
+```bash
+./dist/simulador start --port 8443 --insecure
+```
+
+Inicie com uma URL alternativa para o JAR:
+
+```bash
+./dist/simulador start \
+  --source https://example.org/simulador.jar \
+  --sha256 <sha256-esperado> \
+  --port 8443 \
+  --insecure
+```
+
+Pare:
+
+```bash
+./dist/simulador stop --port 8443 --insecure
+```
+
+O processo é registrado em `~/.hubsaude/processos/simulador.json`. O cache do JAR fica em `~/.hubsaude/simulador/`. Consulte `docs/sprint4-simulador-seguranca-artefatos.md`.
+
 ## GitHub Actions e release
 
 Os workflows ficam em `.github/workflows/` na raiz:
 
-- `build.yml`: roda em `main`, `develop`, `feature/**` e pull requests.
+- `build.yml`: roda em `main`, `develop`, `feature/**`, `release/**`, `refactor/**` e pull requests.
 - `release.yml`: roda quando uma tag SemVer, por exemplo `v1.0.5`, é enviada.
 
-Como sua release atual é `v1.0.4`, a próxima versão desta refatoração deve ser:
+Como sua release atual é `v1.0.5`, a próxima versão deve ser:
 
 ```bash
-git tag v1.0.5
-git push origin v1.0.5
+git tag v1.0.6
+git push origin v1.0.6
 ```
 
 A release publica binários multiplataforma, `checksums.txt` e assinaturas Cosign (`.sig`, `.pem` e `.bundle`).
@@ -187,6 +246,8 @@ A release publica binários multiplataforma, `checksums.txt` e assinaturas Cosig
 
 - `docs/sprint1-fundacao-entrega-continua.md`
 - `docs/sprint2-assinatura-digital-local.md`
+- `docs/sprint3-modo-servidor-pkcs11.md`
+- `docs/sprint4-simulador-seguranca-artefatos.md`
 - `docs/integridade-assinatura-artefatos.md`
 - `docs/higiene-repositorio.md`
 - `docs/implementacao.md`
