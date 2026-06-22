@@ -6,6 +6,8 @@ on:
       - main
       - develop
       - 'feature/**'
+      - 'release/**'
+      - 'refactor/**'
   pull_request:
     branches:
       - main
@@ -17,13 +19,12 @@ permissions:
 jobs:
   test:
     name: Testar código em ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: runner-implementacao
+
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -31,10 +32,20 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Exibir contexto do repositório
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwd
+          ls -la
+          test -f go.mod
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Configurar Java 21
@@ -43,31 +54,42 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Verificar formato de arquivos críticos
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./scripts/check-text-format.sh
+
       - name: Verificar arquivos gerados fora do Git
         if: runner.os != 'Windows'
+        shell: bash
         run: ./scripts/check-generated-files.sh
 
+      - name: Verificar pacotes internos obrigatórios
+        shell: bash
+        run: ./scripts/check-internal-packages.sh
+
       - name: Rodar go vet
+        shell: bash
         run: go vet ./...
 
       - name: Rodar testes Go
+        shell: bash
         run: go test ./...
 
       - name: Validar workflow de release e Cosign
         if: runner.os != 'Windows'
+        shell: bash
         run: ./scripts/check-release-artifacts.sh
 
       - name: Compilar e testar assinador.jar
         if: runner.os != 'Windows'
+        shell: bash
         run: make -C assinador clean all test
 
   build-dev-artifacts:
     name: Compilar binários de desenvolvimento
     needs: test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: runner-implementacao
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -75,13 +97,16 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Compilar CLIs para validação
+        shell: bash
         run: |
           set -euo pipefail
           VERSION=dev
@@ -97,4 +122,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runner-dev-binaries
-          path: runner-implementacao/dist/*
+          path: dist/*
