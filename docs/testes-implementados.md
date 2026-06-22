@@ -57,3 +57,12 @@ cd assinador
 make clean all test
 cd ..
 ```
+
+## Sprint 4 — Simulador do HubSaúde e Segurança de Artefatos
+
+- `cmd/simulador/main_test.go`: valida `simulador version`, parsing de flags, montagem de URL com `--port`, override de porta e configuração de `--source`/`--sha256`.
+- `internal/simulador/client_test.go`: valida consulta `/api/info`, parada por `/shutdown` e reuso de instância ativa.
+- `internal/simulador/acceptance_test.go`: valida erro quando a porta está ocupada por serviço que não é o Simulador, seleção de artefato via ambiente e configuração de URL direta por `RUNNER_SIMULADOR_SOURCE`.
+- `internal/release/manifest_test.go`: valida download, cache, seleção por `release.json`, fallback `simulador -> validador` e URL direta alternativa por `EnsureArtifactFromURL` com SHA-256.
+- `internal/release/acceptance_test.go`: valida rejeição de checksum SHA-256 inválido.
+- `scripts/check-release-artifacts.sh`: valida rastreabilidade da Sprint 4, incluindo binários `simulador-*`, `checksums.txt`, Cosign, `--source`, `--sha256` e ausência da pasta intermediária antiga.

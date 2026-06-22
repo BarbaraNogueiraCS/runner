@@ -151,8 +151,30 @@ func EnsureArtifact(ctx context.Context, manifestURL, artifactName string) (stri
 	if err != nil {
 		return "", Artifact{}, false, err
 	}
+	return ensureArtifact(ctx, artifactName, a)
+}
+
+// EnsureArtifactFromURL baixa um artefato diretamente de uma URL alternativa.
+// Ele usa o mesmo cache local de EnsureArtifact e valida SHA-256 quando informado.
+// A versão cacheada é derivada da URL para evitar reaproveitar um arquivo antigo
+// quando duas URLs diferentes apontam para nomes iguais.
+func EnsureArtifactFromURL(ctx context.Context, sourceURL, expectedSHA, artifactName string) (string, Artifact, bool, error) {
+	sourceURL = strings.TrimSpace(sourceURL)
+	if sourceURL == "" {
+		return "", Artifact{}, false, errors.New("source URL não informada")
+	}
+	if !strings.HasPrefix(sourceURL, "http://") && !strings.HasPrefix(sourceURL, "https://") {
+		return "", Artifact{}, false, fmt.Errorf("source URL deve começar com http:// ou https://: %s", sourceURL)
+	}
+	sum := sha256.Sum256([]byte(sourceURL))
+	version := "source-" + hex.EncodeToString(sum[:])[:12]
+	a := Artifact{URL: sourceURL, Version: version, SHA256: strings.TrimSpace(expectedSHA)}
+	return ensureArtifact(ctx, artifactName, a)
+}
+
+func ensureArtifact(ctx context.Context, artifactName string, a Artifact) (string, Artifact, bool, error) {
 	if a.URL == "" || a.Version == "" {
-		return "", Artifact{}, false, errors.New("release.json sem url ou version para o artefato solicitado")
+		return "", Artifact{}, false, errors.New("release.json/source sem url ou version para o artefato solicitado")
 	}
 	dir, err := managedArtifactDir(artifactName)
 	if err != nil {
@@ -163,7 +185,8 @@ func EnsureArtifact(ctx context.Context, manifestURL, artifactName string) (stri
 	}
 	jarPath := filepath.Join(dir, artifactFileName(artifactName, a))
 	metaPath := jarPath + ".version"
-	if fileMatches(jarPath, a.SHA256) && versionMatches(metaPath, a.Version) {
+	urlMetaPath := jarPath + ".url"
+	if fileMatches(jarPath, a.SHA256) && versionMatches(metaPath, a.Version) && urlMatches(urlMetaPath, a.URL) {
 		return jarPath, a, true, nil
 	}
 	tmp := jarPath + ".download"
@@ -187,6 +210,9 @@ func EnsureArtifact(ctx context.Context, manifestURL, artifactName string) (stri
 		return "", a, false, err
 	}
 	if err := os.WriteFile(metaPath, []byte(a.Version+"\n"), 0o644); err != nil {
+		return "", a, false, err
+	}
+	if err := os.WriteFile(urlMetaPath, []byte(a.URL+"\n"), 0o644); err != nil {
 		return "", a, false, err
 	}
 	return jarPath, a, false, nil
@@ -305,6 +331,16 @@ func versionMatches(path, expected string) bool {
 		return false
 	}
 	return strings.TrimSpace(string(b)) == expected
+}
+
+func urlMatches(path, expected string) bool {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		// Artefatos cacheados por versões anteriores não tinham .url.
+		// Para artefatos versionados pelo release.json, versão+checksum já bastam.
+		return true
+	}
+	return strings.TrimSpace(string(b)) == strings.TrimSpace(expected)
 }
 
 func fileMatches(path, expectedSHA string) bool {

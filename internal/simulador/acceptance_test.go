@@ -31,3 +31,12 @@ func TestAcceptanceArtifactCanBeSelectedByEnvironment(t *testing.T) {
 		t.Fatalf("artefato esperado validador, obtido %s", c.Artifact)
 	}
 }
+
+func TestAcceptanceSourceAndShaCanBeSelectedByEnvironment(t *testing.T) {
+	t.Setenv("RUNNER_SIMULADOR_SOURCE", "https://example.org/simulador.jar")
+	t.Setenv("RUNNER_SIMULADOR_SHA256", "abc123")
+	c := New("http://127.0.0.1:8443", false, "")
+	if c.SourceURL != "https://example.org/simulador.jar" || c.SourceSHA256 != "abc123" {
+		t.Fatalf("source/sha inesperados: %#v", c)
+	}
+}

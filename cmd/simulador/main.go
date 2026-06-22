@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/BarbaraNogueiraCS/runner/internal/apperrors"
@@ -97,9 +99,11 @@ func status(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
-	c.Artifact = defaultText(f["artifact"], c.Artifact)
-	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
+	c, err := newClientFromFlags(f)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return apperrors.UsageError
+	}
 	state, info, err := c.Status()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Simulador do HubSaúde indisponível em %s. Motivo: %v\n", c.BaseURL, err)
@@ -123,9 +127,11 @@ func info(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
-	c.Artifact = defaultText(f["artifact"], c.Artifact)
-	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
+	c, err := newClientFromFlags(f)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return apperrors.UsageError
+	}
 	out, err := c.Info()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Não foi possível consultar /api/info em %s. Motivo: %v\n", c.BaseURL, err)
@@ -141,9 +147,11 @@ func stop(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
-	c.Artifact = defaultText(f["artifact"], c.Artifact)
-	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
+	c, err := newClientFromFlags(f)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return apperrors.UsageError
+	}
 	out, err := c.Stop()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Não foi possível encerrar o Simulador do HubSaúde em %s. Motivo: %v\n", c.BaseURL, err)
@@ -163,9 +171,11 @@ func start(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return apperrors.UsageError
 	}
-	c := simulador.New(f["url"], boolFlag(f, "insecure"), f["jar"])
-	c.Artifact = defaultText(f["artifact"], c.Artifact)
-	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
+	c, err := newClientFromFlags(f)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return apperrors.UsageError
+	}
 	state, reused, err := c.Start()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Não foi possível iniciar o Simulador do HubSaúde: %v\n", err)
@@ -184,10 +194,11 @@ func usage() {
 
 Uso:
   simulador version
-  simulador status [--url https://localhost:8443] [--insecure]
-  simulador info   [--url https://localhost:8443] [--insecure]
-  simulador stop   [--url https://localhost:8443] [--insecure]
-  simulador start  [--url https://localhost:8443] [--insecure] [--jar <simulador.jar>] [--artifact simulador|validador] [--release-json <url>]
+  simulador status [--url https://localhost:8443] [--port 8443] [--insecure]
+  simulador info   [--url https://localhost:8443] [--port 8443] [--insecure]
+  simulador stop   [--url https://localhost:8443] [--port 8443] [--insecure]
+  simulador start  [--url https://localhost:8443] [--port 8443] [--insecure] [--jar <simulador.jar>]
+                   [--artifact simulador|validador] [--release-json <url>] [--source <url>] [--sha256 <hash>]
 
 Observação:
   O Simulador HubSaúde informado no trabalho usa HTTPS local com certificado autoassinado.
@@ -197,8 +208,52 @@ Variáveis de ambiente:
   HUBSAUDE_SIMULADOR_URL  URL padrão do simulador. Padrão: https://localhost:8443
   RUNNER_JAVA             Caminho explícito do executável java
   RUNNER_HOME             Diretório de estado, logs e cache. Padrão: ~/.hubsaude
-  RUNNER_RELEASE_JSON     URL opcional para release.json
-  RUNNER_SIMULADOR_ARTIFACT Artefato padrão do release.json: simulador ou validador`)
+  RUNNER_RELEASE_JSON        URL opcional para release.json
+  RUNNER_SIMULADOR_ARTIFACT  Artefato padrão do release.json: simulador ou validador
+  RUNNER_SIMULADOR_SOURCE    URL direta alternativa para baixar simulador.jar
+  RUNNER_SIMULADOR_SHA256    SHA-256 esperado quando RUNNER_SIMULADOR_SOURCE for usado`)
+}
+
+func newClientFromFlags(f flags) (simulador.Client, error) {
+	baseURL, err := urlWithPort(f["url"], f["port"])
+	if err != nil {
+		return simulador.Client{}, err
+	}
+	c := simulador.New(baseURL, boolFlag(f, "insecure"), f["jar"])
+	c.Artifact = defaultText(f["artifact"], c.Artifact)
+	c.ManifestURL = defaultText(f["release-json"], c.ManifestURL)
+	c.SourceURL = defaultText(f["source"], c.SourceURL)
+	c.SourceSHA256 = defaultText(defaultText(f["sha256"], f["checksum"]), c.SourceSHA256)
+	return c, nil
+}
+
+func urlWithPort(rawURL, rawPort string) (string, error) {
+	if strings.TrimSpace(rawPort) == "" {
+		return rawURL, nil
+	}
+	port, err := strconv.Atoi(rawPort)
+	if err != nil || port <= 0 || port > 65535 {
+		return "", fmt.Errorf("porta inválida em --port: %s", rawPort)
+	}
+	if strings.TrimSpace(rawURL) == "" {
+		return fmt.Sprintf("https://localhost:%d", port), nil
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("URL inválida em --url: %w", err)
+	}
+	if u.Scheme == "" {
+		u.Scheme = "https"
+	}
+	if u.Host == "" {
+		u.Host = "localhost"
+	}
+	host := u.Hostname()
+	if host == "" {
+		host = "localhost"
+	}
+	u.Host = fmt.Sprintf("%s:%d", host, port)
+	return strings.TrimRight(u.String(), "/"), nil
 }
 
 func parseFlags(args []string) (flags, error) {

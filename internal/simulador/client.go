@@ -24,12 +24,14 @@ const DefaultURL = "https://localhost:8443"
 const DefaultArtifact = "simulador"
 
 type Client struct {
-	BaseURL     string
-	Insecure    bool
-	Timeout     time.Duration
-	JarPath     string
-	Artifact    string
-	ManifestURL string
+	BaseURL      string
+	Insecure     bool
+	Timeout      time.Duration
+	JarPath      string
+	Artifact     string
+	ManifestURL  string
+	SourceURL    string
+	SourceSHA256 string
 }
 
 func New(baseURL string, insecure bool, jar string) Client {
@@ -43,7 +45,16 @@ func New(baseURL string, insecure bool, jar string) Client {
 	if artifact == "" {
 		artifact = DefaultArtifact
 	}
-	return Client{BaseURL: strings.TrimRight(baseURL, "/"), Insecure: insecure, Timeout: 5 * time.Second, JarPath: jar, Artifact: artifact, ManifestURL: os.Getenv("RUNNER_RELEASE_JSON")}
+	return Client{
+		BaseURL:      strings.TrimRight(baseURL, "/"),
+		Insecure:     insecure,
+		Timeout:      5 * time.Second,
+		JarPath:      jar,
+		Artifact:     artifact,
+		ManifestURL:  os.Getenv("RUNNER_RELEASE_JSON"),
+		SourceURL:    os.Getenv("RUNNER_SIMULADOR_SOURCE"),
+		SourceSHA256: os.Getenv("RUNNER_SIMULADOR_SHA256"),
+	}
 }
 
 func (c Client) Info() ([]byte, error) {
@@ -84,9 +95,16 @@ func (c Client) Start() (process.State, bool, error) {
 	downloaded := false
 	if jarPath == "" {
 		var err error
-		jarPath, _, downloaded, err = release.EnsureArtifact(context.Background(), c.ManifestURL, c.Artifact)
-		if err != nil {
-			return process.State{}, false, fmt.Errorf("não foi possível obter dinamicamente o simulador.jar a partir do release.json: %w", err)
+		if strings.TrimSpace(c.SourceURL) != "" {
+			jarPath, _, downloaded, err = release.EnsureArtifactFromURL(context.Background(), c.SourceURL, c.SourceSHA256, c.Artifact)
+			if err != nil {
+				return process.State{}, false, fmt.Errorf("não foi possível obter o simulador.jar a partir de --source: %w", err)
+			}
+		} else {
+			jarPath, _, downloaded, err = release.EnsureArtifact(context.Background(), c.ManifestURL, c.Artifact)
+			if err != nil {
+				return process.State{}, false, fmt.Errorf("não foi possível obter dinamicamente o simulador.jar a partir do release.json/GitHub Releases: %w", err)
+			}
 		}
 	}
 	if jarPath == "" {
