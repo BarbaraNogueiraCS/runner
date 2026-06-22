@@ -21,17 +21,17 @@ var signAllowedFlags = map[string]bool{
 	"bundle": true, "provenance": true, "crypto-material": true, "cert-chain": true,
 	"timestamp": true, "strategy": true, "policy": true, "config": true,
 	"signer": true, "input": true, "output": true, "local": true,
-	"jar": true, "port": true, "idle-timeout-minutes": true, "release-json": true,
+	"jar": true, "port": true, "idle-timeout-minutes": true, "timeout": true, "release-json": true,
 }
 
 var validateAllowedFlags = map[string]bool{
 	"signature": true, "timestamp": true, "policy": true, "config": true,
 	"bundle": true, "provenance": true, "input": true, "output": true, "local": true,
-	"jar": true, "port": true, "idle-timeout-minutes": true, "release-json": true,
+	"jar": true, "port": true, "idle-timeout-minutes": true, "timeout": true, "release-json": true,
 }
 
 var serverAllowedFlags = map[string]bool{
-	"jar": true, "port": true, "idle-timeout-minutes": true, "release-json": true,
+	"jar": true, "port": true, "idle-timeout-minutes": true, "timeout": true, "release-json": true,
 }
 
 func main() {
@@ -92,6 +92,33 @@ func newRootCommand(exitCode *int) *cobra.Command {
 	})
 
 	root.AddCommand(&cobra.Command{
+		Use:                "start",
+		Short:              "Inicia o assinador.jar em modo servidor",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = server(append([]string{"start"}, args...))
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "status",
+		Short:              "Mostra o status do assinador.jar em modo servidor",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = server(append([]string{"status"}, args...))
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
+		Use:                "stop",
+		Short:              "Interrompe o assinador.jar em modo servidor",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			*exitCode = server(append([]string{"stop"}, args...))
+		},
+	})
+
+	root.AddCommand(&cobra.Command{
 		Use:                "server",
 		Short:              "Gerencia o assinador.jar em modo servidor",
 		DisableFlagParsing: true,
@@ -131,24 +158,10 @@ func sign(args []string) int {
 		}
 		out = stdout
 	} else {
-		if err := client.Health(); err != nil {
-			if _, reused, startErr := client.StartServer(intFlag(f, "idle-timeout-minutes", 0)); startErr == nil {
-				if !reused {
-					fmt.Fprintln(os.Stderr, "assinador.jar iniciado em modo servidor.")
-				}
-			} else {
-				fmt.Fprintf(os.Stderr, "Servidor do assinador indisponível: %v\n", startErr)
-				fmt.Fprintln(os.Stderr, "Como resolver: informe --jar para iniciar o servidor ou use --local --jar para invocação direta.")
-				return apperrors.IntegrationError
-			}
-		}
 		var err error
-		out, err = client.SignHTTP(req)
+		out, err = signViaServerOrLocal(client, req, idleMinutesFlag(f))
 		if err != nil {
-			if len(out) > 0 {
-				_, _ = os.Stderr.Write(append(out, '\n'))
-			}
-			fmt.Fprintf(os.Stderr, "Falha ao invocar /sign: %v\n", err)
+			fmt.Fprintln(os.Stderr, err)
 			return apperrors.IntegrationError
 		}
 	}
@@ -188,24 +201,10 @@ func validate(args []string) int {
 		}
 		out = stdout
 	} else {
-		if err := client.Health(); err != nil {
-			if _, reused, startErr := client.StartServer(intFlag(f, "idle-timeout-minutes", 0)); startErr == nil {
-				if !reused {
-					fmt.Fprintln(os.Stderr, "assinador.jar iniciado em modo servidor.")
-				}
-			} else {
-				fmt.Fprintf(os.Stderr, "Servidor do assinador indisponível: %v\n", startErr)
-				fmt.Fprintln(os.Stderr, "Como resolver: informe --jar para iniciar o servidor ou use --local --jar para invocação direta.")
-				return apperrors.IntegrationError
-			}
-		}
 		var err error
-		out, err = client.ValidateHTTP(req)
+		out, err = validateViaServerOrLocal(client, req, idleMinutesFlag(f))
 		if err != nil {
-			if len(out) > 0 {
-				_, _ = os.Stderr.Write(append(out, '\n'))
-			}
-			fmt.Fprintf(os.Stderr, "Falha ao invocar /validate: %v\n", err)
+			fmt.Fprintln(os.Stderr, err)
 			return apperrors.IntegrationError
 		}
 	}
@@ -235,7 +234,7 @@ func server(args []string) int {
 	client.ManifestURL = f["release-json"]
 	switch action {
 	case "start":
-		state, reused, err := client.StartServer(intFlag(f, "idle-timeout-minutes", 0))
+		state, reused, err := client.StartServer(idleMinutesFlag(f))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Não foi possível iniciar assinador.jar: %v\n", err)
 			return apperrors.IntegrationError
@@ -281,7 +280,10 @@ Uso:
 
 Compatibilidade:
   assinatura sign --input <arquivo> --signer <nome> [--local] [--jar <assinador.jar>]
-  assinatura server start --jar <assinador.jar> [--port 8080] [--idle-timeout-minutes 10] [--release-json <url>]
+  assinatura start --jar <assinador.jar> [--port 8080] [--timeout 10]
+  assinatura status [--port 8080]
+  assinatura stop [--port 8080]
+  assinatura server start --jar <assinador.jar> [--port 8080] [--timeout 10] [--release-json <url>]
   assinatura server status [--port 8080]
   assinatura server stop [--port 8080]
 
@@ -312,6 +314,7 @@ Opções:
   --local               Invoca diretamente java -jar assinador.jar
   --jar <arquivo>       Caminho do assinador.jar
   --port <porta>        Porta do servidor do assinador. Padrão: 8080
+  --timeout <minutos>   Timeout de inatividade se o servidor for iniciado automaticamente
   --release-json <url>  Manifesto usado para provisionar Java/JDK
   --help                Exibe esta ajuda
 
@@ -336,20 +339,27 @@ Opções:
   --local               Invoca diretamente java -jar assinador.jar
   --jar <arquivo>       Caminho do assinador.jar
   --port <porta>        Porta do servidor do assinador. Padrão: 8080
+  --timeout <minutos>   Timeout de inatividade se o servidor for iniciado automaticamente
   --release-json <url>  Manifesto usado para provisionar Java/JDK
   --help                Exibe esta ajuda`)
 }
 
 func serverUsage(w io.Writer) {
 	fmt.Fprintln(w, `Uso:
-  assinatura server start --jar <assinador.jar> [--port 8080] [--idle-timeout-minutes 10]
+  assinatura start --jar <assinador.jar> [--port 8080] [--timeout 10]
+  assinatura status [--port 8080]
+  assinatura stop [--port 8080]
+
+Compatibilidade:
+  assinatura server start --jar <assinador.jar> [--port 8080] [--timeout 10]
   assinatura server status [--port 8080]
   assinatura server stop [--port 8080]
 
 Opções:
   --jar <arquivo>       Caminho do assinador.jar
   --port <porta>        Porta do servidor do assinador. Padrão: 8080
-  --idle-timeout-minutes Encerra o servidor após período ocioso
+  --timeout <minutos> Encerra o servidor após período ocioso
+  --idle-timeout-minutes Alias compatível de --timeout
   --release-json <url>  Manifesto usado para provisionar Java/JDK
   --help                Exibe esta ajuda`)
 }
@@ -424,6 +434,85 @@ func intFlag(f flags, name string, def int) int {
 		return def
 	}
 	return n
+}
+
+func idleMinutesFlag(f flags) int {
+	if f["timeout"] != "" {
+		return intFlag(f, "timeout", 0)
+	}
+	return intFlag(f, "idle-timeout-minutes", 0)
+}
+
+func signViaServerOrLocal(client assinador.Client, req assinador.SignRequest, idleMinutes int) ([]byte, error) {
+	if err := client.Health(); err != nil {
+		if _, reused, startErr := client.StartServer(idleMinutes); startErr == nil {
+			if !reused {
+				fmt.Fprintln(os.Stderr, "assinador.jar iniciado em modo servidor.")
+			}
+		} else {
+			stdout, stderr, _, localErr := client.SignLocal(req)
+			if localErr == nil {
+				fmt.Fprintf(os.Stderr, "Servidor indisponível; usando fallback local: %v\n", startErr)
+				if len(stderr) > 0 {
+					_, _ = os.Stderr.Write(stderr)
+				}
+				return stdout, nil
+			}
+			return nil, fmt.Errorf("servidor do assinador indisponível: %v. Fallback local também falhou: %s", startErr, strings.TrimSpace(string(stderr)))
+		}
+	}
+	out, err := client.SignHTTP(req)
+	if err != nil {
+		if len(out) > 0 {
+			_, _ = os.Stderr.Write(append(out, '\n'))
+		}
+		stdout, stderr, _, localErr := client.SignLocal(req)
+		if localErr == nil {
+			fmt.Fprintf(os.Stderr, "Falha ao invocar /sign; usando fallback local: %v\n", err)
+			if len(stderr) > 0 {
+				_, _ = os.Stderr.Write(stderr)
+			}
+			return stdout, nil
+		}
+		return nil, fmt.Errorf("falha ao invocar /sign: %v. Fallback local também falhou: %s", err, strings.TrimSpace(string(stderr)))
+	}
+	return out, nil
+}
+
+func validateViaServerOrLocal(client assinador.Client, req assinador.ValidateRequest, idleMinutes int) ([]byte, error) {
+	if err := client.Health(); err != nil {
+		if _, reused, startErr := client.StartServer(idleMinutes); startErr == nil {
+			if !reused {
+				fmt.Fprintln(os.Stderr, "assinador.jar iniciado em modo servidor.")
+			}
+		} else {
+			stdout, stderr, _, localErr := client.ValidateLocal(req)
+			if localErr == nil {
+				fmt.Fprintf(os.Stderr, "Servidor indisponível; usando fallback local: %v\n", startErr)
+				if len(stderr) > 0 {
+					_, _ = os.Stderr.Write(stderr)
+				}
+				return stdout, nil
+			}
+			return nil, fmt.Errorf("servidor do assinador indisponível: %v. Fallback local também falhou: %s", startErr, strings.TrimSpace(string(stderr)))
+		}
+	}
+	out, err := client.ValidateHTTP(req)
+	if err != nil {
+		if len(out) > 0 {
+			_, _ = os.Stderr.Write(append(out, '\n'))
+		}
+		stdout, stderr, _, localErr := client.ValidateLocal(req)
+		if localErr == nil {
+			fmt.Fprintf(os.Stderr, "Falha ao invocar /validate; usando fallback local: %v\n", err)
+			if len(stderr) > 0 {
+				_, _ = os.Stderr.Write(stderr)
+			}
+			return stdout, nil
+		}
+		return nil, fmt.Errorf("falha ao invocar /validate: %v. Fallback local também falhou: %s", err, strings.TrimSpace(string(stderr)))
+	}
+	return out, nil
 }
 
 func compactJSON(b []byte) []byte {

@@ -41,3 +41,25 @@ func TestSprint2UnknownFlagIsRejected(t *testing.T) {
 		t.Fatalf("flag desconhecida deveria retornar erro")
 	}
 }
+
+func TestSprint3RootServerAliasesHelpReturnOK(t *testing.T) {
+	for _, args := range [][]string{
+		{"start", "--help"},
+		{"status", "--help"},
+		{"stop", "--help"},
+	} {
+		if code := run(args); code != 0 {
+			t.Fatalf("%v deveria retornar 0, obtido %d", args, code)
+		}
+	}
+}
+
+func TestSprint3TimeoutAliasIsAccepted(t *testing.T) {
+	f, err := parseFlagsKnown([]string{"--timeout", "7"}, serverAllowedFlags)
+	if err != nil {
+		t.Fatalf("--timeout deveria ser aceito: %v", err)
+	}
+	if got := idleMinutesFlag(f); got != 7 {
+		t.Fatalf("timeout esperado 7, obtido %d", got)
+	}
+}
