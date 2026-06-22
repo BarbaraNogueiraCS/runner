@@ -12,11 +12,12 @@ permissions:
 jobs:
   test:
     name: Testar antes da release em ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -24,10 +25,21 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: '1.23.2'
+          cache: true
           cache-dependency-path: go.mod
 
+      - name: Exibir contexto do repositório
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwd
+          ls -la
+          test -f go.mod
+          test -f go.sum
+
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Configurar Java 21
@@ -43,22 +55,32 @@ jobs:
             [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Tag deve seguir SemVer, exemplo v1.0.0"; exit 1; }
           fi
 
+      - name: Verificar formato de arquivos críticos
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./scripts/check-text-format.sh
+
       - name: Verificar arquivos gerados fora do Git
         if: runner.os != 'Windows'
+        shell: bash
         run: ./scripts/check-generated-files.sh
 
       - name: Rodar go vet
+        shell: bash
         run: go vet ./...
 
       - name: Rodar testes Go
+        shell: bash
         run: go test ./...
 
       - name: Validar workflow, artefatos e Cosign
         if: runner.os != 'Windows'
+        shell: bash
         run: ./scripts/check-release-artifacts.sh
 
       - name: Compilar e testar assinador.jar
         if: runner.os != 'Windows'
+        shell: bash
         run: make -C assinador clean all test
 
   linux:
@@ -72,10 +94,12 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: '1.23.2'
+          cache: true
           cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Configurar Java 21
@@ -85,9 +109,11 @@ jobs:
           java-version: '21'
 
       - name: Compilar assinador.jar
+        shell: bash
         run: make -C assinador clean all
 
       - name: Gerar binários Linux
+        shell: bash
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -114,10 +140,12 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: '1.23.2'
+          cache: true
           cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Gerar binários Windows
@@ -146,13 +174,16 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: '1.23.2'
+          cache: true
           cache-dependency-path: go.mod
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Gerar pacotes DMG macOS
+        shell: bash
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -180,6 +211,7 @@ jobs:
           merge-multiple: true
 
       - name: Conferir artefatos antes da assinatura
+        shell: bash
         run: |
           set -euo pipefail
           pwd
@@ -190,6 +222,7 @@ jobs:
         uses: sigstore/cosign-installer@v3
 
       - name: Gerar checksums e assinar todos os artefatos com Cosign keyless/OIDC
+        shell: bash
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
@@ -210,6 +243,7 @@ jobs:
           done
 
       - name: Conferir artefatos antes da publicação
+        shell: bash
         run: |
           set -euo pipefail
           ls -la dist

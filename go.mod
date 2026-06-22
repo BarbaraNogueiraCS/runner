@@ -1,6 +1,8 @@
 module github.com/BarbaraNogueiraCS/runner
 
-go 1.23.2
+go 1.23
+
+toolchain go1.23.2
 
 require github.com/spf13/cobra v1.8.1
 

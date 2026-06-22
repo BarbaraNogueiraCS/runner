@@ -15,6 +15,7 @@ SPRINT2_JAVA_DIR="$REPO_ROOT/projetos/assinador-java"
 GITIGNORE="$REPO_ROOT/.gitignore"
 GITATTRIBUTES="$REPO_ROOT/.gitattributes"
 GENERATED_CHECK="$REPO_ROOT/scripts/check-generated-files.sh"
+  "$REPO_ROOT/scripts/check-text-format.sh"
 MAKEFILE="$REPO_ROOT/Makefile"
 
 for required in \
@@ -72,6 +73,7 @@ done
 
 required_workflow_patterns=(
   "cache-dependency-path: go.mod"
+  "go-version: '1.23.2'"
   "path: dist/*"
   "actions/download-artifact@v4"
   "merge-multiple: true"
@@ -146,7 +148,7 @@ for pattern in "${required_gitignore_patterns[@]}"; do
 done
 
 required_makefile_patterns=(
-  ".PHONY: deps tidy test vet cover check build java-test samples clean all help"
+  ".PHONY: deps tidy test vet cover check text-check build java-test samples clean all help"
   "deps:"
   "go mod download"
   "tidy:"
@@ -157,9 +159,12 @@ required_makefile_patterns=(
   "go vet ./..."
   "cover: deps"
   "go test -cover ./..."
-  "check: deps"
+  "text-check:"
+  "./scripts/check-text-format.sh"
+  "check: deps text-check"
   "./scripts/check-generated-files.sh"
   "./scripts/check-release-artifacts.sh"
+  "./scripts/check-text-format.sh"
   "build: deps"
   "go build -ldflags"
   "java-test:"
@@ -270,4 +275,4 @@ fi
 
 "$GENERATED_CHECK" >/dev/null
 
-echo "OK: Sprint 1 e Sprint 2 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all."
+echo "OK: Sprint 1 e Sprint 2 cobertas; projeto Go está na raiz; não existe runner-implementacao; workflows usam go.mod e dist/ na raiz; release contém artefatos, checksums, Cosign, OIDC, transparency log, .sig e .pem; Makefile automatiza deps/test/vet/cover/check/build/all e check-text-format protege arquivos críticos contra perda de quebras de linha."
