@@ -12,13 +12,12 @@ permissions:
 jobs:
   test:
     name: Testar antes da release em ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: runner-implementacao
+
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -26,10 +25,20 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Exibir contexto do repositório
+        shell: bash
+        run: |
+          set -euo pipefail
+          pwd
+          ls -la
+          test -f go.mod
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Configurar Java 21
@@ -45,31 +54,42 @@ jobs:
             [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Tag deve seguir SemVer, exemplo v1.0.0"; exit 1; }
           fi
 
+      - name: Verificar formato de arquivos críticos
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./scripts/check-text-format.sh
+
       - name: Verificar arquivos gerados fora do Git
         if: runner.os != 'Windows'
+        shell: bash
         run: ./scripts/check-generated-files.sh
 
+      - name: Verificar pacotes internos obrigatórios
+        shell: bash
+        run: ./scripts/check-internal-packages.sh
+
       - name: Rodar go vet
+        shell: bash
         run: go vet ./...
 
       - name: Rodar testes Go
+        shell: bash
         run: go test ./...
 
       - name: Validar workflow, artefatos e Cosign
         if: runner.os != 'Windows'
+        shell: bash
         run: ./scripts/check-release-artifacts.sh
 
       - name: Compilar e testar assinador.jar
         if: runner.os != 'Windows'
+        shell: bash
         run: make -C assinador clean all test
 
   linux:
     name: Gerar artefatos Linux
     needs: test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: runner-implementacao
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -77,10 +97,12 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Configurar Java 21
@@ -90,9 +112,11 @@ jobs:
           java-version: '21'
 
       - name: Compilar assinador.jar
+        shell: bash
         run: make -C assinador clean all
 
       - name: Gerar binários Linux
+        shell: bash
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -106,15 +130,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-linux
-          path: runner-implementacao/dist/*
+          path: dist/*
 
   windows:
     name: Gerar artefatos Windows
     needs: test
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: runner-implementacao
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -122,10 +143,12 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Gerar binários Windows
@@ -141,15 +164,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-windows
-          path: runner-implementacao/dist/*
+          path: dist/*
 
   macos:
     name: Gerar artefatos macOS
     needs: test
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: runner-implementacao
     steps:
       - name: Baixar código
         uses: actions/checkout@v4
@@ -157,13 +177,16 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.2'
-          cache-dependency-path: runner-implementacao/go.mod
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
 
       - name: Baixar dependências Go
+        shell: bash
         run: go mod download
 
       - name: Gerar pacotes DMG macOS
+        shell: bash
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
@@ -177,7 +200,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-macos
-          path: runner-implementacao/dist/*
+          path: dist/*
 
   publish:
     name: Assinar com Cosign e publicar GitHub Release
@@ -187,25 +210,27 @@ jobs:
       - name: Baixar artefatos compilados
         uses: actions/download-artifact@v4
         with:
-          path: runner-implementacao/dist
+          path: dist
           merge-multiple: true
 
       - name: Conferir artefatos antes da assinatura
+        shell: bash
         run: |
           set -euo pipefail
           pwd
-          test -d runner-implementacao/dist
-          ls -la runner-implementacao/dist
+          test -d dist
+          ls -la dist
 
       - name: Instalar Cosign
         uses: sigstore/cosign-installer@v3
 
       - name: Gerar checksums e assinar todos os artefatos com Cosign keyless/OIDC
+        shell: bash
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
           set -euo pipefail
-          cd runner-implementacao/dist
+          cd dist
           test -n "$(find . -maxdepth 1 -type f -print -quit)"
           sha256sum * > checksums.txt
 
@@ -221,12 +246,13 @@ jobs:
           done
 
       - name: Conferir artefatos antes da publicação
+        shell: bash
         run: |
           set -euo pipefail
-          ls -la runner-implementacao/dist
+          ls -la dist
 
       - name: Publicar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: runner-implementacao/dist/*
+          files: dist/*
           fail_on_unmatched_files: true

@@ -1,29 +1,29 @@
 # Higiene do repositório
 
-Este projeto mantém os arquivos de configuração do repositório na raiz:
+O repositório mantém apenas código-fonte, documentação e configuração de build. Saídas geradas localmente não devem ser versionadas.
 
-- `.github/workflows/`: workflows do GitHub Actions.
-- `.gitignore`: regras para ignorar saídas geradas.
-- `.gitattributes`: normalização de finais de linha e tratamento de binários.
-- `docs/`: documentação do projeto.
-
-## Arquivos gerados que não devem ser versionados
-
-As seguintes pastas são criadas por testes, builds ou execução local:
+Não commitar:
 
 ```text
-runner-implementacao/assinador/target/
-runner-implementacao/assinador/out/
-runner-implementacao/dist/
-runner-implementacao/examples/*.json
+assinador/target/
+assinador/out/
+dist/
+examples/*.json
 ```
 
-Esses caminhos estão no `.gitignore`. Eles podem existir localmente depois de `make clean all test`, `go build` ou execução de assinatura, mas não devem aparecer em commits.
+Esses caminhos são protegidos pelo `.gitignore` da raiz.
 
-## Como verificar antes do commit
+## Verificação
+
+Execute na raiz do repositório:
 
 ```bash
-cd runner-implementacao
+make check
+```
+
+ou diretamente:
+
+```bash
 ./scripts/check-generated-files.sh
 ```
 
@@ -33,15 +33,11 @@ Resultado esperado:
 OK: target/, out/, dist/ e JSONs gerados estão protegidos pelo .gitignore e não aparecem como arquivos rastreados.
 ```
 
-## Como remover do índice se foram adicionados por engano
-
-Execute na raiz do repositório:
+Se algum arquivo gerado já estiver rastreado, remova apenas do índice:
 
 ```bash
-git rm -r --cached runner-implementacao/assinador/target || true
-git rm -r --cached runner-implementacao/assinador/out || true
-git rm -r --cached runner-implementacao/dist || true
-git rm -r --cached runner-implementacao/examples/*.json || true
+git rm -r --cached --ignore-unmatch assinador/target
+git rm -r --cached --ignore-unmatch assinador/out
+git rm -r --cached --ignore-unmatch dist
+git rm --cached --ignore-unmatch examples/*.json
 ```
-
-Depois faça um novo `git status` e commite apenas código-fonte, documentação, scripts e workflows.

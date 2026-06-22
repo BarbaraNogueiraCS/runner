@@ -33,4 +33,4 @@ dist/** linguist-generated=true
 **/dist/** linguist-generated=true
 **/target/** linguist-generated=true
 **/out/** linguist-generated=true
-runner-implementacao/examples/*.json linguist-generated=true
+examples/*.json linguist-generated=true
